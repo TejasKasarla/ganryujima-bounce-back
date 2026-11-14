@@ -1,8 +1,8 @@
 # Active project instructions — Unity (user correction)
 
-The user explicitly changed the engine to **Unity/C#**. These instructions take precedence over all web-stack references in the original brief below. Work on **one milestone per request**. Milestones 1–3 and the requested environment art pass are complete. Milestone 3 adds Arima opponent FSM, zone tells, feints, movement, stagger, and parry → recoil → counter window. Preserve the coastal art pass and Dev A face-input boundary. Do not start milestone 4 in this request.
+The user explicitly changed the engine to **Unity/C#**. These instructions take precedence over all web-stack references in the original brief below. Work on **one milestone per request**. Milestones 1–3 and the requested environment art pass are complete. Milestone 3 adds Arima opponent FSM, zone tells, feints, movement, stagger, and parry → recoil → counter window. The user subsequently requested internet-sourced samurai models: Arima now uses the bundled Grab3D CC0 rigged samurai, with source/license in Assets/Art/Samurai and prefab in Resources/Characters. Preserve its .meta references, the coastal art pass, and Dev A face-input boundary. Do not start milestone 4 in this request.
 
-- Engine: Unity 6.3 LTS, installed editor 6000.3.10f1. Built-in 3D renderer, procedural geometry, no downloaded art. Desktop keyboard/mouse prototype.
+- Engine: Unity 6.3 LTS, installed editor 6000.3.10f1. Built-in 3D renderer, procedural environment plus licensed downloaded character art (explicitly requested by the user). Desktop keyboard/mouse prototype.
 - Project root contains Assets/, Packages/, ProjectSettings/. Open this folder with Unity Hub.
 - Dev B owns Assets/Scripts/Core, World, and future gameplay/story/UI/audio folders plus Assets/Editor.
 - Dev A owns Assets/Scripts/Input/Face. Dev A's shared C# contract, real local MediaPipe bridge, and mock fallback are now integrated. Do not implement webcam tracking or edit their files here.

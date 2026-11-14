@@ -9,7 +9,7 @@
 3. Open Assets/Scenes/PracticeGround.unity and press Play. Click Game view, then **Enter the court**.
 4. Arima will approach and circle. Match the incoming zone with 1–4 and press RMB as the tell fills. After a parry, release RMB and strike during **COUNTER NOW**. Use Space or WASD to leave his reach.
 
-If the scene is missing, choose **Ganryujima → Create practice scene**. The scene generates geometry at runtime; no downloaded art, webcam, face model, or extra package is required.
+If the scene is missing, choose **Ganryujima → Create practice scene**. The scene generates geometry at runtime; the samurai model and textures are included in the repository; no asset-site account, webcam, or separate face model is required.
 
 ## Combat controls
 
@@ -41,7 +41,7 @@ A matching timed parry sends Arima into **Recoil → Counter**. The HUD announce
 
 The duel ends when either health bar reaches zero: Arima yields on victory; defeat offers another attempt. **R** resets both fighters. Story consequences, wounds and persistent bounce-back stats remain later milestones. The old PracticeExchange fixture stays available for regression checks but no longer runs in the game.
 
-Pausing or losing focus cancels held charge/guard, freezes combat and AI together, and keeps face.tick() running. Hit-stop uses a local gameplay clock; Unity's global Time.timeScale remains unchanged. Effects use a fixed pool of 16 spark meshes. Arima has a procedural clothed model and sword poses, not a finished realistic character or motion-captured animation.
+Pausing or losing focus cancels held charge/guard, freezes combat and AI together, and keeps face.tick() running. Hit-stop uses a local gameplay clock; Unity's global Time.timeScale remains unchanged. Effects use a fixed pool of 16 spark meshes. Arima now uses a downloaded textured, skinned samurai with its walk animation and procedural combat poses. Combat animations are not motion-captured.
 
 ## Face mock (readout only)
 
@@ -63,7 +63,7 @@ Face-driven dodges, kiai, composure changes to parry/time, and gaze tells are in
 - Assets/Scripts/Combat/CombatModel.cs: deterministic stamina/health/strike/guard/parry rules; no input or rendering dependency.
 - Assets/Scripts/Combat/PracticeExchange.cs: retained milestone-2 test fixture.
 - Assets/Scripts/Combat/ArimaOpponent.cs: deterministic opponent FSM, footwork, defense and counter windows.
-- Assets/Scripts/World/ArimaArt.cs: generated duelist and articulated sword/arm poses.
+- Assets/Scripts/World/ArimaArt.cs: imported character wrapper; SamuraiRig.cs samples walk animation and poses the sword, arms, fingers and feet.
 - Assets/Scripts/Combat/CombatPresentation.cs: procedural sword poses, local hit-stop, shake, recoil, pooled sparks.
 - Assets/Scripts/UI/CombatHud.cs: health/stamina, maai, stance/charge, tell, face readout, entry/reset prompts.
 - Assets/Scripts/World/ArenaBuilder.cs: procedural court and scenery.
@@ -88,7 +88,7 @@ The user requested this art pass before opponent AI. The court now uses sculpted
 
 Lighting uses a warm low sun, cool sky fill, real-time soft shadows, atmospheric mountain layers, and a custom dawn sky. A lightweight Built-in Render Pipeline image effect adds restrained grain, vignette, desaturation, and glow. The HUD is slimmer; gameplay field notes live behind F2; F1 is reserved for Dev A's camera diagnostics. Visual tuning lives in Assets/Scripts/Core/VisualConfig.cs.
 
-All meshes and textures are generated locally in C#. No new downloaded art or third-party packages are used; Unity's built-in image-conversion module is enabled for editor screenshot export. Generated native assets are owned and released with their scene objects. Custom shaders are under Assets/Resources/Shaders so they remain referenced in player builds. This is a procedural, stylized environment pass; finished character art/animation, authored cinematics, and audio remain future work.
+Environment and player-weapon art are generated locally in C#. Arima uses the CC0 downloaded model described below. Unity's built-in animation and image-conversion modules support the character and editor screenshots; no third-party runtime packages are used. Generated native assets are owned and released with their scene objects. Custom shaders are under Assets/Resources/Shaders so they remain referenced in player builds. This is a procedural, stylized environment pass; finished character art/animation, authored cinematics, and audio remain future work.
 
 **After pulling changes, stop Play and restart it.** Runtime-generated scenery does not rebuild in an existing Play session. If scripts reload while playing, the game displays a restart notice instead of running with lost interface/model instances.
 
@@ -100,3 +100,11 @@ Milestone 3: Arima's opponent FSM, zone attacks, wind-up tells, feints, recoil/s
 ## Theme and credits
 
 The core theme is parry → bounce back → counter. Future duel losses cause wounds healed by composure meditation. Unity supplies the engine; all geometry is procedural. Future narrative adapts legend-adjacent Musashi accounts rather than claiming historical reconstruction; document specific historical sources as story content is added.
+
+## Downloaded samurai character
+
+Arima's primitive body has been replaced with [Grab3D's rigged Samurai](https://grab3d.com/models/characters/samurai/), released under CC0. The provider discloses AI-assisted Meshy generation, Blender cleanup, and automated rigging. The exact license, origin manifest, source URL and file hash live in Assets/Art/Samurai. This is an art representation, not a historically verified likeness of Arima.
+
+The imported character has 295,015 triangles, 54 skin bones, and 2048px color/normal/metallic/roughness maps. We pack roughness into Unity's smoothness channel, normalize its height, sample the supplied walk animation, and drive combat arm/foot poses from the existing FSM. The prefab and all assets are committed; **stop Play before pulling, then press Play again**. The built-in animation module is now enabled.
+
+Validation: 71 combat/AI checks, actual Unity camera renders of idle, walk, windup and parry-counter poses. The dense model is currently intended for this single-opponent scene; a 60 FPS target has not yet been benchmarked on the user's laptop. No face-input implementation was changed.
