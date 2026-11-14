@@ -1,5 +1,6 @@
 using UnityEngine;
 using Ganryujima.Core;
+using Ganryujima.World;
 
 namespace Ganryujima.Combat
 {
@@ -25,15 +26,11 @@ namespace Ganryujima.Combat
             arm = new GameObject("Practice blade pivot").transform;
             arm.SetParent(target, false);
             arm.localPosition = new Vector3(0, 1.45f, 0);
-            var blade = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            blade.name = "Telegraphed practice blade";
-            blade.transform.SetParent(arm, false);
-            blade.transform.localPosition = new Vector3(0, 0, -0.45f);
-            blade.transform.localScale = new Vector3(0.055f, 0.055f, 0.9f);
-            blade.GetComponent<Collider>().enabled = false;
-            Object.Destroy(blade.GetComponent<Collider>());
-            armMaterial = new Material(Resources.Load<Material>("Materials/Flat"));
-            blade.GetComponent<Renderer>().sharedMaterial = armMaterial;
+            armMaterial = new Material(Resources.Load<Material>("Materials/Surface")) { color = new Color(0.35f, 0.25f, 0.14f) };
+            armMaterial.SetFloat("_Glossiness", 0.16f);
+            var assets = arm.gameObject.AddComponent<GeneratedResources>();
+            var blade = ArenaBuilder.MeshObject("Curved wooden practice blade", arm, assets.Own(ArtGeometry.Blade(0.9f, 0.045f, 0.025f)), armMaterial);
+            blade.localRotation = Quaternion.Euler(-90, 0, 0);
             sparkMaterial = new Material(Resources.Load<Material>("Materials/Flat")) { color = new Color(1f, 0.74f, 0.24f) };
             var pool = new GameObject("Clash Sparks (pooled)").transform;
             for (int i = 0; i < sparks.Length; i++)
@@ -98,13 +95,13 @@ namespace Ganryujima.Combat
         private void PoseSword(float dt)
         {
             Stance stance = combat.Swinging ? combat.AttackStance : combat.Stance;
-            Vector3 position = new Vector3(0.34f, -0.43f, 0.62f);
+            Vector3 position = new Vector3(0.42f, -0.55f, 0.85f);
             Vector3 angles = stance == Stance.Upper ? new Vector3(5, -10, 5) :
                 stance == Stance.Lower ? new Vector3(45, 0, 35) :
-                stance == Stance.Side ? new Vector3(15, -25, 65) : new Vector3(12, 0, 24);
+                stance == Stance.Side ? new Vector3(15, -25, 65) : new Vector3(18, -8, -12);
             if (stance == Stance.Upper) position.y += 0.16f;
             if (stance == Stance.Lower) position.y -= 0.08f;
-            if (combat.Guarding) { position = new Vector3(0.06f, -0.22f, 0.65f); angles += new Vector3(-15, 10, 40); }
+            if (combat.Guarding) { position = new Vector3(0.16f, -0.4f, 0.85f); angles += new Vector3(-15, 10, 40); }
             if (combat.Charging) angles += new Vector3(-25, -15, -25) * combat.ChargeProgress;
             if (combat.Swinging)
             {

@@ -1,13 +1,13 @@
 # Active project instructions — Unity (user correction)
 
-The user explicitly changed the engine to **Unity/C#**. These instructions take precedence over all web-stack references in the original brief below. Work on **one milestone per request**. Milestones 1 and 2 are complete. Do not start milestone 3 without a new user request.
+The user explicitly changed the engine to **Unity/C#**. These instructions take precedence over all web-stack references in the original brief below. Work on **one milestone per request**. Milestones 1 and 2 are complete. The user requested a visual art pass before milestone 3: naturalistic Japanese coastal scenery with the original ink-wash palette and red accents. This visual pass takes priority over the original milestone order. Do not start opponent AI in this request.
 
 - Engine: Unity 6.3 LTS, installed editor 6000.3.10f1. Built-in 3D renderer, procedural geometry, no downloaded art. Desktop keyboard/mouse prototype.
 - Project root contains Assets/, Packages/, ProjectSettings/. Open this folder with Unity Hub.
 - Dev B owns Assets/Scripts/Core, World, and future gameplay/story/UI/audio folders plus Assets/Editor.
-- Dev A owns Assets/Scripts/Input/Face. Dev A's shared C# contract and MockFaceInput commit is now integrated. Dev A will supply the real provider. Do not implement webcam tracking or edit their files here.
+- Dev A owns Assets/Scripts/Input/Face. Dev A's shared C# contract, real local MediaPipe bridge, and mock fallback are now integrated. Do not implement webcam tracking or edit their files here.
 - Consume face input ONLY through IFaceInput from FaceInputFactory.createFaceInput(). Preserve the brief's camelCase field names, ranges, method names, and one-frame event semantics in C#. Call face.tick() at the start of every game Update, then getState().
-- Game tuning: Assets/Scripts/Core/GameConfig.cs. DEBUG_INPUT remains true until Dev A integrates the real provider and failure fallback. Factory TODO flags this integration.
+- Game tuning: Assets/Scripts/Core/GameConfig.cs. DEBUG_INPUT remains true by default. Dev A's provider/fallback and camera override are integrated; consult their README for setup. F1 is owned by face diagnostics; Dev B field notes use F2.
 - Use Unity's built-in legacy Input for this dependency-free scaffold. A later intentional Input System migration should preserve controls and the face boundary.
 - The former Vite prototype is archived in work/web-prototype and is not the active game.
 

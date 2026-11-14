@@ -19,7 +19,7 @@ namespace Ganryujima.Core
         private CombatModel combat;
         private PracticeExchange practice;
         private CombatPresentation presentation;
-        private bool ready, entered;
+        private bool ready, entered, debugHud;
         private float yaw, pitch, verticalVelocity;
         private Vector2 stanceMotion;
         private string inputError;
@@ -48,8 +48,10 @@ namespace Ganryujima.Core
             view.transform.localPosition = Vector3.up * GameConfig.EyeHeight;
             view.fieldOfView = GameConfig.FieldOfView;
             view.nearClipPlane = 0.05f;
-            view.farClipPlane = 150;
-            view.clearFlags = CameraClearFlags.SolidColor;
+            view.farClipPlane = 320;
+            view.clearFlags = CameraClearFlags.Skybox;
+            view.allowHDR = true;
+            view.gameObject.AddComponent<InkAtmosphere>();
             view.backgroundColor = new Color(0.82f, 0.81f, 0.75f);
             view.gameObject.AddComponent<AudioListener>();
             Transform sword = ArenaBuilder.BuildKatana(view.transform);
@@ -66,10 +68,13 @@ namespace Ganryujima.Core
 
         private void Update()
         {
-            if (!ready) return;
+            // Unity cannot serialize interface/model instances across a script reload in Play Mode.
+            // Keep a stale session quiet until Play is restarted rather than spamming exceptions.
+            if (!ready || face == null || combat == null || practice == null || presentation == null) return;
             face.tick(); // First gameplay action, once per frame, including paused/released frames.
             state = face.getState();
             FramesTicked++;
+            if (KeyInput.GetKeyDown(KeyCode.F2)) debugHud = !debugHud; // F1 belongs to Dev A's camera diagnostics.
             if (KeyInput.GetKeyDown(KeyCode.Escape)) SetCapture(false);
             if (KeyInput.GetKeyDown(KeyCode.R)) Restart();
             if (!Captured) return; // Freeze combat and practice timers together; no global timeScale.
@@ -157,6 +162,17 @@ namespace Ganryujima.Core
         private void OnApplicationFocus(bool focus) { if (!focus) SetCapture(false); }
         private void OnDisable() { SetCapture(false); }
         private void OnDestroy() { face?.stop(); presentation?.Dispose(); }
-        private void OnGUI() { CombatHud.Draw(combat, practice, state, ready, Captured, Distance, Enter, Restart, inputError); }
+        private void OnGUI()
+        {
+            if (ready && (face == null || combat == null || presentation == null))
+            {
+                GUI.Box(new Rect(25, 25, 590, 60), "Scripts changed during Play. Stop Play, then press Play again to reload the court.");
+                return;
+            }
+            Matrix4x4 previousMatrix = GUI.matrix;
+            Color previousColor = GUI.color;
+            try { CombatHud.Draw(combat, practice, state, ready, Captured, Distance, Enter, Restart, inputError, debugHud); }
+            finally { GUI.matrix = previousMatrix; GUI.color = previousColor; }
+        }
     }
 }
