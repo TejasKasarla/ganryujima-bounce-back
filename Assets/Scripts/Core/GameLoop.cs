@@ -4,6 +4,7 @@ using Ganryujima.Input.Face;
 using Ganryujima.World;
 using Ganryujima.Combat;
 using Ganryujima.UI;
+using Ganryujima.Story;
 using KeyInput = UnityEngine.Input;
 
 namespace Ganryujima.Core
@@ -25,6 +26,12 @@ namespace Ganryujima.Core
         private InkAtmosphere atmosphere;
         private FinishingBlow finisher;
         public FinishingBlow Finisher => finisher;
+        private StoryModel story;
+        private StoryChoiceInput storyInput;
+        private StoryCamera storyCamera;
+        private bool journeyStarted,storyPaused;
+        public StoryModel Story => story;
+        public bool JourneyStarted => journeyStarted;
         public FaceGameplay FaceGameplay => faceGameplay;
         private bool ready, entered, debugHud;
         private float yaw, pitch, verticalVelocity;
@@ -70,6 +77,10 @@ namespace Ganryujima.Core
             opponentArt.Tick(opponent, 1);
             presentation = new CombatPresentation(combat, view, sword, target);
             finisher = new FinishingBlow(view,sword,target,presentation);
+            var graph=JsonUtility.FromJson<StoryGraph>(Resources.Load<TextAsset>("Story/story").text);
+            story=new StoryModel(graph); storyInput=new StoryChoiceInput();
+            storyCamera=new StoryCamera(view,target,sword);
+            story.Changed+=OnStoryNode;
             face = FaceInputFactory.createFaceInput();
             try { await face.start(); }
             catch (Exception error) { inputError = "Face provider failed: " + error.Message; Debug.LogException(error); }
@@ -82,7 +93,7 @@ namespace Ganryujima.Core
         {
             // Unity cannot serialize interface/model instances across a script reload in Play Mode.
             // Keep a stale session quiet until Play is restarted rather than spamming exceptions.
-            if (!ready || face == null || combat == null || opponent == null || presentation == null || faceGameplay == null || finisher == null) return;
+            if (!ready || face == null || combat == null || opponent == null || presentation == null || faceGameplay == null || finisher == null || story == null) return;
             face.tick(); // First gameplay action, once per frame, including paused/released frames.
             state = face.getState();
             FramesTicked++;
@@ -93,12 +104,38 @@ namespace Ganryujima.Core
                 bool focused=Application.isFocused;
                 if (!focused && !finisher.Paused) finisher.TogglePause();
                 finisher.Tick(Mathf.Min(Time.unscaledDeltaTime,GameConfig.MaximumDelta),focused && KeyInput.GetKeyDown(KeyCode.Space));
-                if (!finisher.Active) SetCapture(false);
+                if (!finisher.Active)
+                {
+                    SetCapture(false);
+                    if(journeyStarted) story.ResolveDuel(true,combat.Parries);
+                }
+                return;
+            }
+            if(journeyStarted && story.Current.kind!="duel")
+            {
+                faceGameplay.Observe(state,false);
+                if(!Application.isFocused) storyPaused=true;
+                if(Application.isFocused && KeyInput.GetKeyDown(KeyCode.Escape)) storyPaused=!storyPaused;
+                story.Tick(Mathf.Min(Time.unscaledDeltaTime,GameConfig.MaximumDelta),storyPaused);
+                storyCamera.Tick(story.Age);
+                if(!storyPaused)
+                {
+                    if(story.Current.kind=="choice")
+                    {
+                        int number=KeyInput.GetKeyDown(KeyCode.Alpha1)?0:KeyInput.GetKeyDown(KeyCode.Alpha2)?1:KeyInput.GetKeyDown(KeyCode.Alpha3)?2:-1;
+                        // Number keys work with every provider; Y/N also remain explicit binary fallbacks.
+                        if(story.Current.choices.Length==2)
+                        { if(KeyInput.GetKeyDown(KeyCode.Y)) number=0; else if(KeyInput.GetKeyDown(KeyCode.N)) number=1; }
+                        int selection=storyInput.Read(story.Current,story.Age,state,number,KeyInput.GetKeyDown(KeyCode.Return));
+                        if(selection>=0) story.Choose(selection);
+                    }
+                    else if(KeyInput.GetKeyDown(KeyCode.Space)) story.Continue();
+                }
                 return;
             }
             if (KeyInput.GetKeyDown(KeyCode.F2)) debugHud = !debugHud; // F1 belongs to Dev A's camera diagnostics.
             if (KeyInput.GetKeyDown(KeyCode.Escape)) SetCapture(false);
-            if (KeyInput.GetKeyDown(KeyCode.R)) Restart();
+            if (journeyStarted && KeyInput.GetKeyDown(KeyCode.R)) Restart();
             faceGameplay.Observe(state, Captured);
             atmosphere.SetComposure(combat.Composure);
             if (!Captured) return; // Freeze combat and opponent timers together; no global timeScale.
@@ -118,7 +155,11 @@ namespace Ganryujima.Core
             presentation.Tick(realDt, dt);
             view.transform.localPosition = Vector3.up * GameConfig.EyeHeight + presentation.CameraOffset + Vector3.right * (faceGameplay.Lean * GameConfig.LeanCameraOffset);
             view.transform.localRotation = Quaternion.Euler(pitch, 0, -faceGameplay.Lean * GameConfig.LeanCameraRoll);
-            if (combat.Over) SetCapture(false);
+            if (combat.Over)
+            {
+                SetCapture(false);
+                if(journeyStarted) story.ResolveDuel(combat.TargetHealth<=0,combat.Parries);
+            }
         }
 
         private void ReadLookAndCombat(float dt)
@@ -175,13 +216,36 @@ namespace Ganryujima.Core
             player.Move(horizontal + Vector3.up * (verticalVelocity * dt));
         }
 
-        private void Enter() { if (ready && !combat.Over) SetCapture(true); }
+        public void BeginJourney()
+        {
+            if(!ready || finisher.Active) return;
+            finisher.Reset(); storyCamera.Restore();
+            journeyStarted=true; storyPaused=false;
+            combat.Reset(); opponent.Reset(); opponentArt.Tick(opponent,1); presentation.Reset(); faceGameplay.Reset();
+            ResetPlayer(); story.Reset();
+        }
+        private void OnStoryNode(StoryNode node)
+        {
+            storyPaused=false;
+            if(node.kind=="duel") { storyCamera.Restore(); Restart(); }
+            else
+            {
+                SetCapture(false); presentation.Reset(); storyCamera.Enter(node);
+                storyInput.Reset(node.choices?.Length??0);
+            }
+        }
+        private void Enter() { if(!journeyStarted) BeginJourney(); else if (ready && !combat.Over) SetCapture(true); }
         private void Restart()
         {
             if (!ready) return;
             finisher.Reset();
-            combat.Reset(); opponent.Reset(); opponentArt.Tick(opponent, 1); presentation.Reset();
+            combat.Reset(journeyStarted?story.Stats.Wounds:0); opponent.Reset(); opponentArt.Tick(opponent, 1); presentation.Reset();
             faceGameplay.Reset();
+            ResetPlayer();
+            SetCapture(true);
+        }
+        private void ResetPlayer()
+        {
             player.enabled = false;
             player.transform.SetPositionAndRotation(new Vector3(0, 0, GameConfig.SpawnDistance), Quaternion.identity);
             player.enabled = true;
@@ -189,7 +253,6 @@ namespace Ganryujima.Core
             stanceMotion = Vector2.zero;
             view.transform.localPosition = Vector3.up * GameConfig.EyeHeight;
             view.transform.localRotation = Quaternion.identity;
-            SetCapture(true);
         }
 
         private void SetCapture(bool capture)
@@ -204,7 +267,7 @@ namespace Ganryujima.Core
         private void OnDestroy() { face?.stop(); faceGameplay?.Dispose(); opponent?.Dispose(); presentation?.Dispose(); }
         private void OnGUI()
         {
-            if (ready && (face == null || combat == null || presentation == null || faceGameplay == null || finisher == null))
+            if (ready && (face == null || combat == null || presentation == null || faceGameplay == null || finisher == null || story == null))
             {
                 GUI.Box(new Rect(25, 25, 590, 60), "Scripts changed during Play. Stop Play, then press Play again to reload the court.");
                 return;
@@ -216,6 +279,12 @@ namespace Ganryujima.Core
             {
                 GUI.depth = 10; // Keep Dev A's corner webcam overlay above the gameplay/entry panels.
                 if (finisher != null && finisher.Active) { FinisherHud.Draw(finisher); return; }
+                if(journeyStarted && story.Current.kind!="duel")
+                {
+                    StoryHud.Draw(story,storyInput,storyPaused,()=> { if(!storyPaused) story.Continue(); },
+                        index=> { if(!storyPaused) story.Choose(index); },BeginJourney);
+                    return;
+                }
                 CombatHud.Draw(combat, opponent, state, ready, Captured, Distance, Enter, Restart, inputError, debugHud, faceGameplay);
             }
             finally { GUI.matrix = previousMatrix; GUI.color = previousColor; GUI.depth = previousDepth; }

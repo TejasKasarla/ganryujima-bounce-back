@@ -15,6 +15,8 @@ namespace Ganryujima.Combat
         public Func<bool, Stance, TargetResponse> ResolveTargetStrike;
         public float Health { get; private set; }
         public float Stamina { get; private set; }
+        public float StaminaLimit { get; private set; }
+        public int Wounds { get; private set; }
         public float TargetHealth { get; private set; }
         public Stance Stance { get; set; }
         public Stance AttackStance { get; private set; }
@@ -40,7 +42,7 @@ namespace Ganryujima.Combat
         public bool ParryOpen => Guarding && clock - guardStart <= guardWindow;
         public float ChargeProgress => Mathf.Clamp01(Charge / GameConfig.HeavyChargeTime);
         public float SwingProgress => Swinging ? Mathf.Clamp01(swingAge / swingDuration) : 0;
-        public float MovementScale => (Stamina < GameConfig.ExhaustedThreshold ? GameConfig.ExhaustedSpeed : 1) *
+        public float MovementScale => (1-Wounds*GameConfig.WoundSpeedPenalty) * (Stamina < GameConfig.ExhaustedThreshold ? GameConfig.ExhaustedSpeed : 1) *
             (Guarding ? GameConfig.GuardSpeed : Charging ? GameConfig.ChargeSpeed : Swinging ? GameConfig.AttackSpeed : 1);
         private float clock, lastSpend, guardStart, guardLock, retreatCooldown, guardWindow;
         private float swingAge, swingDuration, strikeAt;
@@ -48,10 +50,12 @@ namespace Ganryujima.Combat
 
         public CombatModel() { Reset(); }
 
-        public void Reset()
+        public void Reset(int wounds = 0)
         {
             Health = TargetHealth = GameConfig.MaximumHealth;
-            Stamina = GameConfig.MaximumStamina;
+            Wounds=Mathf.Clamp(wounds,0,GameConfig.MaximumWounds);
+            StaminaLimit=GameConfig.MaximumStamina-Wounds*GameConfig.WoundStaminaPenalty;
+            Stamina = StaminaLimit;
             Stance = AttackStance = Stance.Middle;
             Guarding = Charging = Heavy = resolved = false;
             Charge = BrokenRemaining = RetreatRemaining = RecoilRemaining = 0;
@@ -167,7 +171,7 @@ namespace Ganryujima.Combat
                 if (Stamina <= 0) BreakGuard(false);
             }
             else if (!Charging && !Swinging && clock - lastSpend >= GameConfig.RegenDelay)
-                Stamina = Mathf.Min(GameConfig.MaximumStamina, Stamina + GameConfig.StaminaRegen * dt);
+                Stamina = Mathf.Min(StaminaLimit, Stamina + GameConfig.StaminaRegen * dt);
             if (!Swinging) return;
             swingAge += dt;
             if (!resolved && swingAge >= strikeAt)
@@ -201,7 +205,7 @@ namespace Ganryujima.Combat
                 if (ParryOpen)
                 {
                     Parries++;
-                    Stamina = Mathf.Min(GameConfig.MaximumStamina, Stamina + GameConfig.ParryRefund);
+                    Stamina = Mathf.Min(StaminaLimit, Stamina + GameConfig.ParryRefund);
                     RecoilRemaining = GameConfig.PracticeRecoil;
                     Emit(Impact.Parry, "PARRY — bounce back!");
                 }

@@ -1,13 +1,13 @@
 # Ganryujima: Bounce Back — Unity
 
-**Unity 6.3 LTS (6000.3.10f1), C#, built-in renderer. Milestones 1–4 and the requested environment art pass are complete.** A first-person duel against Arima Kihei with a procedural arena, katana, stamina, directional defense, and keyboard face mock. The original web prototype is archived in work/web-prototype. AGENTS.md contains the full brief and Unity engine override.
+**Unity 6.3 LTS (6000.3.10f1), C#, built-in renderer. Milestones 1–5 and the requested environment art pass are complete.** A first-person duel against Arima Kihei with a procedural arena, katana, stamina, directional defense, and keyboard face mock. The original web prototype is archived in work/web-prototype. AGENTS.md contains the full brief and Unity engine override.
 
 ## Open and play
 
 1. Clone the repository (or pull the latest main branch if you already have it).
 2. Unity Hub → Add project from disk → select the root folder containing Assets, Packages, and ProjectSettings. Use 6000.3.10f1.
 3. Open Assets/Scenes/PracticeGround.unity and press Play. Click Game view, then **Enter the court**.
-4. Arima will approach and circle. Match the incoming zone with 1–4 and press RMB as the tell fills. After a parry, release RMB and strike during **COUNTER NOW**. Use Space or WASD to leave his reach.
+4. Space reveals/advances the introduction. Choose an approach with 1–3, then enter the duel. Arima will approach and circle. Match the incoming zone with 1–4 and press RMB as the tell fills. After a parry, release RMB and strike during **COUNTER NOW**. Use Space or WASD to leave his reach.
 
 If the scene is missing, choose **Ganryujima → Create practice scene**. The scene generates geometry at runtime; the samurai model and textures are included in the repository; no asset-site account, webcam, or separate face model is required.
 
@@ -39,7 +39,7 @@ Arima moves through Idle → Circle → Windup → Strike → Recover → Guard.
 
 A matching timed parry sends Arima into **Recoil → Counter**. The HUD announces the 1.05-second counter window; a hit landing during it deals 1.5× damage and staggers him. Heavy hits interrupt his attack. Light hits do not continuously stun-lock him. During Guard, he blocks light cuts in his displayed zone; change zone or use a heavy cut. All tuning lives in GameConfig.cs.
 
-The duel ends when either health bar reaches zero: Arima yields on victory; defeat offers another attempt. **R** resets both fighters. Story consequences, wounds and persistent bounce-back stats remain later milestones. The old PracticeExchange fixture stays available for regression checks but no longer runs in the game.
+The duel ends when either health bar reaches zero: victory plays the finishing cut, then leads to an aftermath choice; defeat continues the story with a wound and the option to return or walk away. **R** restarts the current fight while preserving journey stats and wounds. The old PracticeExchange fixture stays available for regression checks but no longer runs in the game.
 
 Pausing or losing focus cancels held charge/guard, freezes combat and AI together, and keeps face.tick() running. Hit-stop uses a local gameplay clock; Unity's global Time.timeScale remains unchanged. Effects use a fixed pool of 16 spark meshes. Arima now uses a downloaded textured, skinned samurai with its walk animation and procedural combat poses. Combat animations are not motion-captured.
 
@@ -105,7 +105,7 @@ Environment and player-weapon art are generated locally in C#. Arima uses the CC
 The editor method Ganryujima.Editor.VisualCapture.Run runs combat checks and saves actual camera renders after entering Play Mode. It accepts an optional GANRYUJIMA_CAPTURE_DIR environment variable. Camera renders exclude the HUD. The original 38 combat checks continue to pass, with no changes to Dev A's face-input files.
 ## Next milestone
 
-Milestone 5: JSON story state machine, choices, cutscenes, Honor/Fame/wounds and bounce-back tally. Continue one milestone per request.
+Milestone 6: calm-face meditation with an enso circle that completes while composed, breaks while agitated, and heals wounds. Continue one milestone per request.
 
 Dev A is also building the **start/title screen** and will push it separately. Dev B owns the gameplay HUD and pause flow; preserve Dev A's start-screen work when integrating incoming commits.
 
@@ -113,7 +113,7 @@ For remaining content, use suitable licensed internet assets for characters, ani
 
 ## Theme and credits
 
-The core theme is parry → bounce back → counter. Future duel losses cause wounds healed by composure meditation. Unity supplies the engine; the game combines procedural scenery with licensed imported assets. Future narrative adapts legend-adjacent Musashi accounts rather than claiming historical reconstruction; document specific historical sources as story content is added.
+The core theme is parry → bounce back → counter. Duel losses now cause wounds; calm-face meditation healing is milestone 6. Unity supplies the engine; the game combines procedural scenery with licensed imported assets. Future narrative adapts legend-adjacent Musashi accounts rather than claiming historical reconstruction; document specific historical sources as story content is added.
 
 ## Downloaded samurai character
 
@@ -132,3 +132,17 @@ Defeating Arima automatically plays a 3.8-second first-person sequence: letterbo
 The existing CC0 imported samurai is posed on its skeleton. This is a directed procedural animation, not a downloaded execution/mocap clip. The sword sound is SFXMint's CC0 “Sharp Sword Slash With Metal Ring 03”; source, license and AI/procedural origin disclosure are retained in Resources/Audio/Finisher. No added runtime network dependency.
 
 Finisher checks cover victory-only activation, one-shot trigger, pause, single impact cue, natural completion, skip, retry and unchanged damage. The editor method Ganryujima.Editor.FinisherChecks.Capture exercises the actual imported rig, camera restore, sound import and continuing face ticks, and saves camera renders. Camera renders exclude the in-game letterbox/caption overlay.
+
+## Story chapter (milestone 5)
+
+Assets/Resources/Story/story.json is the narrative source. Its validated graph supports cutscene, choice, duel, meditation and ending nodes. This milestone contains Arima's first chapter: introduction → three-way approach → duel → finishing-cut aftermath/mercy choice, or loss → wound/resolve choice → rest/retry or departure. The ending nodes are **chapter summaries**, not the three final Ganryujima endings planned for milestone 7. No additional opponents are implied.
+
+Cutscenes use camera shots, letterbox and typewriter captions. **Space** or click reveals a line, then advances; **Esc** pauses/resumes. Focus loss pauses narrative input. Three-way choices use gaze/lean to select, nod/Enter to confirm, or **1–3/click** to choose directly. Binary choices accept nod/Y for first and shake/N for second, plus **1–2/click**. A brief entry delay rejects pulses carried from the previous scene. No tracked face or unknown gaze blocks keyboard/mouse fallbacks.
+
+Honor and Fame change through choices. A defeat adds one wound, capped at three: each removes 10 maximum stamina and 8% walking speed on subsequent duels. Rest is currently a supported narrative node that returns to the court with wounds retained; the calm-hold/enso healing activity is milestone 6. Completed duels add their parries; winning while wounded adds a comeback. Bounce Back = parries + comebacks + recoveries (recoveries stay zero until healing is implemented). The chapter summary shows all these values, wins/losses, and a new-journey button.
+
+Journey state lasts for the current Play session. It is not saved to disk. Restarting a live fight with R preserves journey stats and wounds but discards that unfinished fight's parry count. Starting a new journey resets all stats and positions. Gameplay freezes during story nodes while face.tick() continues. The previously imported samurai and arena are reused; no new art downloads are required for this milestone.
+
+Dev A start-screen integration: call the existing GameLoop component's public **BeginJourney()** once startup is ready (FramesTicked > 0). It resets and begins the chapter. The existing entry button uses the same method; no separate title screen was added.
+
+Verification: **159 deterministic assertions** (38 combat, 33 AI, 46 face, 10 finisher, 32 story), plus Unity scene checks for story-camera restore, live face ticks during narrative, choice-to-duel handoff, wounded retry settings, aftermath/ending transitions and new journey. Run Ganryujima → Check story rules, or batch method Ganryujima.Editor.StoryPlayChecks.Capture for the integration run and actual camera shots (without IMGUI caption overlays). Narrative is original legend-inspired fiction, not a verified historical account.

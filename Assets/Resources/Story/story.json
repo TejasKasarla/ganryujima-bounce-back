@@ -1,0 +1,29 @@
+{
+  "start": "arrival",
+  "nodes": [
+    { "id": "arrival", "kind": "cutscene", "title": "The first exchange", "speaker": "THE ROAD", "shot": "wide", "text": "Before the island, before the legend, there was a first opponent. On a quiet shore, Arima Kihei waits. A name can be won in a moment. A way of living takes longer.", "next": "approach" },
+    { "id": "approach", "kind": "choice", "title": "How will you meet him?", "text": "Arima rests a hand on his sword. The distance between you is still yours to choose.", "shot": "opponent", "choices": [
+      { "text": "Bow. Study his footing.", "next": "respect", "effect": { "honor": 2 } },
+      { "text": "Breathe. Find your own rhythm.", "next": "stillness", "effect": { "honor": 1 } },
+      { "text": "Challenge him. Let the shore remember.", "next": "challenge", "effect": { "fame": 2 } }
+    ] },
+    { "id": "respect", "kind": "cutscene", "title": "A measured beginning", "speaker": "ARIMA", "shot": "opponent", "text": "A bow is easy. Show me whether your guard has the same patience.", "next": "arima" },
+    { "id": "stillness", "kind": "cutscene", "title": "One breath", "speaker": "THE ROAD", "shot": "shore", "text": "The wind crosses the court. Your shoulders settle. Read the cut. Match its zone. Meet the steel at the last moment, and answer while he recoils.", "next": "arima" },
+    { "id": "challenge", "kind": "cutscene", "title": "A name carried on the wind", "speaker": "ARIMA", "shot": "opponent", "text": "Then earn the sound of your name. Words cannot hold a blade away.", "next": "arima" },
+    { "id": "arima", "kind": "duel", "title": "Arima Kihei", "win": "aftermath", "lose": "fallen", "winEffect": { "fame": 1 }, "loseEffect": { "wounds": 1 } },
+    { "id": "aftermath", "kind": "cutscene", "title": "The silence after steel", "speaker": "THE ROAD", "shot": "opponent", "text": "Arima falls to his knees. The exchange is over. What follows will travel farther than the sound of the final cut.", "next": "mercy" },
+    { "id": "mercy", "kind": "choice", "title": "What will you leave behind?", "text": "A defeated opponent. A watching world. Your next act belongs to you.", "shot": "opponent", "choices": [
+      { "text": "Spare him. Offer a hand.", "next": "mercy_end", "effect": { "honor": 3 } },
+      { "text": "Kill him. Claim the victory.", "next": "fame_end", "effect": { "fame": 3 } }
+    ] },
+    { "id": "fallen", "kind": "cutscene", "title": "The ground is not the end", "speaker": "THE ROAD", "shot": "shore", "text": "Your footing fails. Pain stays with you, but the road does not close. You leave the court wounded. You can return carrying what this defeat has taught you.", "next": "resolve" },
+    { "id": "resolve", "kind": "choice", "title": "Will you return?", "text": "The wound reduces your breath and speed. The choice to rise is still yours.", "shot": "shore", "choices": [
+      { "text": "Yes. Gather yourself, then face him again.", "next": "rest", "effect": { "honor": 1 } },
+      { "text": "No. Walk on with the lesson.", "next": "road_end", "effect": { "honor": 1 } }
+    ] },
+    { "id": "rest", "kind": "meditation", "title": "A moment beside the water", "speaker": "THE ROAD", "shot": "shore", "text": "Sit. Let the rush of defeat pass. The wound remains, but your resolve is yours again. When you are ready, return to the court. Healing takes more than one quiet moment.", "next": "arima" },
+    { "id": "mercy_end", "kind": "ending", "title": "A hand, not another cut", "text": "You leave Arima alive. A victory can become the first step toward restraint. This first chapter ends here; the road to Ganryujima is still ahead.", "shot": "wide" },
+    { "id": "fame_end", "kind": "ending", "title": "A name at a cost", "text": "You leave with a victory others will repeat. Whether the name is worth its price will follow you down the road. This first chapter ends here; the road to Ganryujima is still ahead.", "shot": "wide" },
+    { "id": "road_end", "kind": "ending", "title": "The road continues", "text": "You carry a wound and a lesson away from the court. Defeat has changed the journey, not ended it. This first chapter ends here; the road to Ganryujima is still ahead.", "shot": "shore" }
+  ]
+}

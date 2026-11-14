@@ -44,6 +44,7 @@ namespace Ganryujima.Editor
             OpponentChecks.Verify();
             FaceGameplayChecks.Verify();
             FinisherChecks.Verify();
+            StoryChecks.Verify();
             CreateScene();
             SessionState.SetBool("GanryujimaSmoke", true);
             EditorApplication.EnterPlaymode();

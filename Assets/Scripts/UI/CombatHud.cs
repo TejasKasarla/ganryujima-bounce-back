@@ -56,8 +56,8 @@ namespace Ganryujima.UI
                 Fill(new Rect(25, height - 143, 320, 111), new Color(0.06f, 0.10f, 0.10f, 0.79f));
                 GUI.Label(new Rect(42, height - 132, 270, 25), "VITALITY", tiny);
                 Bar(new Rect(42, height - 104, 275, 4), combat.Health / GameConfig.MaximumHealth, Vermilion);
-                GUI.Label(new Rect(42, height - 86, 270, 24), "BREATH", tiny);
-                Bar(new Rect(42, height - 58, 275, 3), combat.Stamina / GameConfig.MaximumStamina, Gold);
+                GUI.Label(new Rect(42, height - 86, 270, 24),  $"BREATH  /  {combat.StaminaLimit:F0} MAX", tiny);
+                Bar(new Rect(42, height - 58, 275, 3), combat.Stamina / combat.StaminaLimit, Gold);
                 string action = combat.DodgeRemaining > 0 ? (combat.InvulnerableRemaining > 0 ? "DODGE / INVULNERABLE" : "DODGE RECOVERY") : combat.BrokenRemaining > 0 ? "BROKEN GUARD" : combat.Charging ? (combat.ChargeProgress >= 1 ? "HEAVY READY" : "DRAWING STRENGTH") : combat.ParryOpen ? "PARRY" : combat.Guarding ? "GUARD" : combat.Swinging ? "CUT" : "READY";
                 GUI.Label(new Rect(width / 2 - 230, height - 99, 460, 35), combat.Stance.ToString().ToUpperInvariant() + "  /  " + action, centered);
                 string spacing = distance > GameConfig.LightReach ? "BEYOND REACH" : distance < GameConfig.TooCloseDistance ? "CLOSE QUARTERS" : "WITHIN REACH";

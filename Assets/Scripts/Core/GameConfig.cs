@@ -119,5 +119,11 @@ namespace Ganryujima.Core
         public const float FinisherCutDuration = 0.20f;
         public const float FinisherImpactAt = 1.17f;
         public const float FinisherVolume = 0.65f;
+        public const int MaximumWounds = 3;
+        public const float WoundStaminaPenalty = 10f;
+        public const float WoundSpeedPenalty = 0.08f;
+        public const float StoryCharactersPerSecond = 38f;
+        public const float StoryChoiceDelay = 0.4f;
+        public const float StoryCameraBlend = 1.2f;
     }
 }
