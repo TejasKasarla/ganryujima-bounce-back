@@ -89,7 +89,7 @@ namespace Ganryujima.Combat
             hitStop = Mathf.Max(0, hitStop - realDt);
             shake = Mathf.Max(0, shake - realDt);
             visualClock += realDt;
-            float amplitude = GameConfig.ShakeAmplitude * shake / GameConfig.ShakeDuration;
+            float amplitude = GameSettings.Shake ? GameConfig.ShakeAmplitude * shake / GameConfig.ShakeDuration : 0;
             CameraOffset = new Vector3(Mathf.Sin(visualClock * 97), Mathf.Cos(visualClock * 113), 0) * amplitude;
             PoseSword(gameDt);
             sparkAge += realDt;

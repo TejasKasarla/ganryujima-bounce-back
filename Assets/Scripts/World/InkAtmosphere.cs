@@ -19,7 +19,7 @@ namespace Ganryujima.World
         }
         private void OnRenderImage(RenderTexture source, RenderTexture destination)
         {
-            if (material == null) Graphics.Blit(source, destination);
+            if (material == null || !GameSettings.PostEffects) Graphics.Blit(source, destination);
             else Graphics.Blit(source, destination, material);
         }
         public void SetComposure(float composure)

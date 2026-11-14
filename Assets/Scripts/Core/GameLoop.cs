@@ -32,6 +32,11 @@ namespace Ganryujima.Core
         private StoryCamera storyCamera;
         private MeditationModel meditation;
         private MeditationScene meditationScene;
+        private GameAudio soundscape;
+        private ArenaParticles particles;
+        private readonly PauseMenu pauseMenu = new PauseMenu();
+        public bool Paused { get; private set; }
+        public GameAudio Audio => soundscape;
         public MeditationModel Meditation => meditation;
         private bool journeyStarted,storyPaused;
         public StoryModel Story => story;
@@ -55,6 +60,10 @@ namespace Ganryujima.Core
             Transform arena = ArenaBuilder.Build();
             arena.Find("Practice Target").gameObject.SetActive(false);
             arenas=new ArenaDirector(arena);
+            GameSettings.Load();
+            AudioListener.pause = false;
+            particles = new GameObject("Drifting petals and shore dust").AddComponent<ArenaParticles>();
+            particles.Initialize();
             opponentArt = new ArimaArt(arena);
             target = opponentArt.Root;
             var body = new GameObject("Player");
@@ -77,6 +86,7 @@ namespace Ganryujima.Core
             view.gameObject.AddComponent<AudioListener>();
             Transform sword = ArenaBuilder.BuildKatana(view.transform);
             combat = new CombatModel();
+            soundscape = new GameAudio(view.transform, combat);
             opponent = new ArimaOpponent(combat);
             faceGameplay = new FaceGameplay(combat, opponent);
             opponentArt.Tick(opponent, 1);
@@ -103,12 +113,16 @@ namespace Ganryujima.Core
             face.tick(); // First gameplay action, once per frame, including paused/released frames.
             state = face.getState();
             FramesTicked++;
+            if (KeyInput.GetKeyDown(KeyCode.F2)) debugHud = !debugHud;
+            if (KeyInput.GetKeyDown(KeyCode.Escape)) SetPaused(!Paused);
+            particles.SetPaused(Paused);
+            if (Paused) { faceGameplay.Observe(state, false); return; }
+            soundscape.Tick(Mathf.Min(Time.unscaledDeltaTime, GameConfig.MaximumDelta), Captured && !finisher.Active && !combat.Over,
+                player.transform.position, opponent, journeyStarted && story.Current.kind != "duel");
             if (finisher.Active)
             {
                 faceGameplay.Observe(state,false);
-                if (KeyInput.GetKeyDown(KeyCode.Escape)) finisher.TogglePause();
                 bool focused=Application.isFocused;
-                if (!focused && !finisher.Paused) finisher.TogglePause();
                 finisher.Tick(Mathf.Min(Time.unscaledDeltaTime,GameConfig.MaximumDelta),focused && KeyInput.GetKeyDown(KeyCode.Space));
                 if (!finisher.Active)
                 {
@@ -120,8 +134,6 @@ namespace Ganryujima.Core
             if(journeyStarted && story.Current.kind!="duel")
             {
                 faceGameplay.Observe(state,false);
-                if(!Application.isFocused) storyPaused=true;
-                if(Application.isFocused && KeyInput.GetKeyDown(KeyCode.Escape)) storyPaused=!storyPaused;
                 story.Tick(Mathf.Min(Time.unscaledDeltaTime,GameConfig.MaximumDelta),storyPaused);
                 storyCamera.Tick(story.Age);
                 if(story.Current.kind=="meditation")
@@ -146,8 +158,6 @@ namespace Ganryujima.Core
                 }
                 return;
             }
-            if (KeyInput.GetKeyDown(KeyCode.F2)) debugHud = !debugHud; // F1 belongs to Dev A's camera diagnostics.
-            if (KeyInput.GetKeyDown(KeyCode.Escape)) SetCapture(false);
             if (journeyStarted && KeyInput.GetKeyDown(KeyCode.R)) Restart();
             faceGameplay.Observe(state, Captured);
             atmosphere.SetComposure(combat.Composure);
@@ -178,8 +188,8 @@ namespace Ganryujima.Core
         private void ReadLookAndCombat(float dt)
         {
             var mouse = new Vector2(KeyInput.GetAxisRaw("Mouse X"), KeyInput.GetAxisRaw("Mouse Y"));
-            yaw += mouse.x * GameConfig.MouseSensitivity;
-            pitch = Mathf.Clamp(pitch - mouse.y * GameConfig.MouseSensitivity, -GameConfig.MaximumPitch, GameConfig.MaximumPitch);
+            yaw += mouse.x * GameSettings.Sensitivity;
+            pitch = Mathf.Clamp(pitch - mouse.y * GameSettings.Sensitivity, -GameConfig.MaximumPitch, GameConfig.MaximumPitch);
             player.transform.rotation = Quaternion.Euler(0, yaw, 0);
             view.transform.localRotation = Quaternion.Euler(pitch, 0, 0);
             stanceMotion = Vector2.Lerp(stanceMotion, Vector2.zero, 1 - Mathf.Exp(-GameConfig.StanceMouseDecay * dt));
@@ -231,7 +241,8 @@ namespace Ganryujima.Core
 
         public void BeginJourney()
         {
-            if(!ready || finisher.Active) return;
+            if(!ready) return;
+            SetPaused(false);
             finisher.Reset(); storyCamera.Restore();
             journeyStarted=true; storyPaused=false;
             combat.Reset(); opponent.Reset(); opponentArt.Tick(opponent,1); presentation.Reset(); faceGameplay.Reset();
@@ -241,6 +252,9 @@ namespace Ganryujima.Core
         {
             storyPaused=false;
             arenas.Show(story.Arena);
+            GameSettings.Apply();
+            soundscape.SetScene(story.Arena, node.kind);
+            particles.SetScene(story.Arena);
             if(opponent.Id!=story.Encounter)
             {
                 finisher.Reset(); opponent.Configure(story.Encounter);
@@ -284,9 +298,26 @@ namespace Ganryujima.Core
             Cursor.lockState = capture ? CursorLockMode.Locked : CursorLockMode.None;
             Cursor.visible = !capture;
         }
-        private void OnApplicationFocus(bool focus) { if (!focus) SetCapture(false); }
+        public void SetPaused(bool value)
+        {
+            if (!ready) return;
+            Paused = storyPaused = value;
+            if (finisher.Active && finisher.Paused != value) finisher.TogglePause();
+            AudioListener.pause = value;
+            particles.SetPaused(value);
+            if (value) { pauseMenu.Open(); SetCapture(false); }
+            else
+            {
+                GameSettings.Save();
+                if (journeyStarted && story.Current.kind == "duel" && !combat.Over && !finisher.Active) SetCapture(true);
+            }
+        }
+        private void OnApplicationFocus(bool focus)
+        {
+            if (!focus) { if (ready && journeyStarted) SetPaused(true); else SetCapture(false); }
+        }
         private void OnDisable() { SetCapture(false); }
-        private void OnDestroy() { face?.stop(); faceGameplay?.Dispose(); opponent?.Dispose(); presentation?.Dispose(); }
+        private void OnDestroy() { face?.stop(); faceGameplay?.Dispose(); opponent?.Dispose(); presentation?.Dispose(); soundscape?.Dispose(); AudioListener.pause = false; }
         private void OnGUI()
         {
             if (ready && (face == null || combat == null || presentation == null || faceGameplay == null || finisher == null || story == null))
@@ -300,6 +331,12 @@ namespace Ganryujima.Core
             try
             {
                 GUI.depth = 10; // Keep Dev A's corner webcam overlay above the gameplay/entry panels.
+                if (Paused)
+                {
+                    pauseMenu.Draw(journeyStarted ? opponent.Name : "Before the journey", journeyStarted && story.Current.kind == "duel" && !finisher.Active,
+                        () => SetPaused(false), () => { SetPaused(false); Restart(); }, BeginJourney);
+                    return;
+                }
                 if (finisher != null && finisher.Active) { FinisherHud.Draw(finisher); return; }
                 if(journeyStarted && story.Current.kind!="duel")
                 {

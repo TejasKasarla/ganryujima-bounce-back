@@ -1,8 +1,10 @@
 # Ganryujima: Bounce Back — Unity
 
-**Unity 6.3 LTS (6000.3.10f1), C#, built-in renderer. Milestones 1–7 and the requested environment art pass are complete.** A first-person story journey through Arima, Yoshioka and Kojiro with a procedural arena, katana, stamina, directional defense, and keyboard face mock. The original web prototype is archived in work/web-prototype. AGENTS.md contains the full brief and Unity engine override.
+**Unity 6.3 LTS (6000.3.10f1), C#, built-in renderer.** A first-person journey through Arima, Yoshioka and Kojiro, with directional sword combat, face-driven abilities, meditation and three endings. Milestones 1–7 are complete; milestone 8 adds the final gameplay presentation, soundscape, pause/settings and Windows build. Dev A's separate start screen is pending. AGENTS.md contains the design brief and ownership boundaries.
 
 ## Open and play
+
+For a packaged Windows demo, extract the whole build folder and run **Ganryujima.exe**. Keyboard mode is the default. **Play with webcam.cmd** launches the same game with `--camera`, through Dev A's existing factory/provider. Keep Ganryujima_Data and GanryujimaFace beside the executable. Start the camera in the local companion tab, allow access yourself, and complete neutral calibration; F1 shows the live preview. Camera denial/disconnection falls back through the existing provider. No webcam is needed for keyboard play.
 
 1. Clone the repository (or pull the latest main branch if you already have it).
 2. Unity Hub → Add project from disk → select the root folder containing Assets, Packages, and ProjectSettings. Use 6000.3.10f1.
@@ -26,7 +28,7 @@ If the scene is missing, choose **Ganryujima → Create practice scene**. The sc
 | Space | Short backward retreat, stamina cost and cooldown; no i-frames |
 | F2 | Toggle field notes: controls and face-input debug values |
 | F1 | Dev A camera/face diagnostics |
-| Esc | Freeze the duel and release the cursor |
+| Esc | Pause/resume; sound, display, sensitivity and controls menu |
 | R | Reset both duelists, stamina, AI, and positions; re-enter duel |
 
 Strikes resolve once after wind-up, using distance and a forward aim cone. Missing still costs stamina. Heavy strikes have more damage, reach, and recovery time. Guard/charge/attack states slow movement. Guarding continuously drains stamina; a late matching guard blocks at additional cost. A wrong zone or an attack from behind hits health. Exhausting guard breaks it and briefly prevents attacks/guard. Releasing guard has a short rearm delay, so repeated clicks cannot keep a permanent parry window. Stamina regenerates after a delay while resting.
@@ -55,7 +57,7 @@ The mock provider stays enabled by default, so all abilities work without a webc
 | Agitated face / hold C | Narrower parry window, down to 0.10 s; restrained edge blur/darkening |
 | Center gaze / X | Focus on Arima for 0.15 s within 5 m / 20° to reveal committed cuts versus feints |
 | Look aside / Z or V | Remove gaze assistance; ordinary zone tells still work |
-| Y / N / G | Nod / shake / wink debug values, reserved for later story work |
+| Y / N / G | Nod / shake for binary story decisions; wink debug value |
 
 Release Q/E back to neutral before repeating a lean in the same direction. Space remains a backward footwork retreat with **no i-frames**. Dodge cancels guard/charging, but cannot cancel a committed swing or guard break. Kiai cannot overlap a swing/dodge/charge; a successful shout spends its cost/cooldown even if the opponent is out of range. It does no damage and preserves an existing parry-counter opening. Cooldowns use gameplay seconds, including clash slow motion.
 
@@ -175,6 +177,22 @@ The final summary retains Honor, Fame, wounds, wins/losses, parries, comebacks, 
 
 Arima, Yoshioka and Kojiro use **the same CC0 Grab3D skinned mesh**, with red, charcoal and ivory lacquer variants, respectively. Kojiro is slightly taller and carries the longer blade. These are fictional visual representations, not historical portraits or three independently authored downloaded models. The recolor shader preserves the original skin/metal/normal textures. Poly Haven's [Coast Sand 01](https://polyhaven.com/a/coast_sand_01) is CC0; source/license and download manifest are retained in Resources/Art/Coast. The model candidate inspected in scratch work was not included because its precise asset provenance was not established.
 
-Verification: all **222 rule assertions** pass. Ganryujima.Editor.ContentPlayChecks.Capture runs the campaign handoffs in the real Unity scene, checks venue changes, beach collision/textures, character shaders, signature poses, final finisher/ending, face ticks, and reset to Arima. Actual camera renders of all Yoshioka venues and Kojiro's beach were inspected. This is functional content; character-motion refinement, richer ambience, performance benchmarking and final presentation remain milestone 8.
+Verification: **222 rule assertions** cover combat, opponent AI, face gameplay, finishing blows, story, meditation and content. Ganryujima.Editor.ContentPlayChecks.Capture exercises campaign handoffs in the real scene, venue changes, beach collision/textures, character shaders, signature poses, final finisher/ending, face ticks and reset to Arima. Actual camera renders of all Yoshioka venues and Kojiro's beach were inspected.
 
 Historical context: the location/duel inspiration is discussed by [Japan Tourism Agency's Ganryujima entry](https://www.mlit.go.jp/tagengo-db/en/R5-00678.html) and [Shimonoseki's official tourism site](https://shimonoseki.travel/about-en/). Dialogue, mercy branches, choices of venue, three endings and the playable Swallow Cut are authored game fiction inspired by the Musashi legends; do not treat the game as a historical reconstruction.
+
+## Presentation and pause (milestone 8)
+
+Esc opens a shared pause menu from combat, story, meditation or a finishing blow. Combat/AI timers, story typewriter, healing, finishing timeline, audio and drifting particles pause together. Face tick/getState continues each frame; paused gestures are discarded. Focus loss pauses an active journey; resume explicitly after returning from the camera tab. No global Time.timeScale changes are used.
+
+The menu offers resume, current-duel restart, new journey, controls, and desktop quit in builds. Sound & Display saves master volume, wind/sea volume, music/taiko volume, mouse sensitivity, three quality presets, camera-shake toggle, postprocessing toggle and drifting-particle toggle with PlayerPrefs. A new journey clears run stats; current-duel restart preserves existing wounds and the current opponent profile. Run progress itself is not saved between launches.
+
+Balanced is the default: 48 m shadows and 2x MSAA. Performance uses 30 m hard shadows and no MSAA; High uses 65 m shadows and 4x MSAA. Choose Performance on slower GPUs. Paper grain, vignette, restrained bloom, warm color grading and faint ink edges use a camera pass; low composure adds edge blur. Petals in the court become faint sand/dust on the beach, with a fixed cap of 72 particles. Existing combat sparks retain their 16-object pool. Imported rig limb/finger transforms are cached to remove per-frame bone-name allocation.
+
+Wind and ocean ambience crossfade with the venue; MP3 padding is trimmed and overlapping ends avoid abrupt loop restarts. Downloaded CC0 clashes/slashes accompany blocks, parries and cuts. Authored procedural sand steps, impact thuds, kiai-like breath, sparse taiko and breath-flute tones complete the soundscape. These are stylized effects rather than recordings of traditional musical performance. See [CREDITS.md](CREDITS.md) and the asset-local manifests for source/license and AI-origin disclosures.
+
+Build from **Ganryujima → Build Windows demo**, or use Unity batch mode with `-executeMethod Ganryujima.Editor.ReleaseBuild.Windows -quit`. Windows standalone support must be installed in Unity Hub. Default output is Builds/Windows; GANRYUJIMA_BUILD_DIR overrides it. The build preserves the enabled scene order, so Dev A's upcoming start scene can be first; until it lands, PracticeGround uses the existing entry panel. Before a camera-enabled build, run Dev A's setup script so the model/vendor runtime can be copied by their post-build hook. For normal play-mode development DEBUG_INPUT remains keyboard-first; the existing Face → Use camera next Play override still works.
+
+Ganryujima.Editor.PolishPlayChecks.Capture passes the 222 existing assertions and scene checks for pause in all four phases, live face ticks while paused, settings save/load, new journey from a paused cinematic, licensed audio loading, particle limits and shader support. Render captures show the actual camera, not IMGUI overlays. The Windows x64 build was launched and its story-to-duel handoff, pause, sound/display and controls pages were checked; its player log is free of runtime errors and animation sampling warnings. The rig uses a private legacy copy of the walk clip so deterministic sampling works outside the editor. The separate content integration checks retain all campaign routes/arenas. A 60 FPS target is configured; this is not a claim of a full hardware performance certification or a physical-webcam accuracy test.
+
+Dev A integration remains intentionally small: call GameLoop.BeginJourney() after FramesTicked is nonzero, retain their start-screen design, and place their scene first in Build Settings. No face provider files or competing start screen are authored by Dev B.

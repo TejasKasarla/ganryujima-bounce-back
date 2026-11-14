@@ -2,7 +2,8 @@ namespace Ganryujima.Core
 {
     public static class GameConfig
     {
-        public const bool DEBUG_INPUT = true;
+        // Keyboard-first demo by default; the optional camera launcher keeps provider selection at the factory boundary.
+        public static readonly bool DEBUG_INPUT = !System.Array.Exists(System.Environment.GetCommandLineArgs(), arg => arg == "--camera");
         public const float EyeHeight = 1.68f;
         public const float FieldOfView = 68f;
         public const float MouseSensitivity = 2f;
@@ -15,7 +16,7 @@ namespace Ganryujima.Core
         public const float Gravity = -20f;
         public const float GroundedVelocity = -2f;
 
-        // Combat. Seconds use the local game clock; face composure is not wired yet.
+        // Combat. Seconds use the local game clock.
         public const float MaximumHealth = 100f;
         public const float MaximumStamina = 100f;
         public const float StaminaRegen = 23f;

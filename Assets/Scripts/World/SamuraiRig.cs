@@ -20,11 +20,29 @@ namespace Ganryujima.World
         private Material originalArmor;
         private readonly Dictionary<OpponentId,Material> variants=new Dictionary<OpponentId,Material>();
         private Vector3 modelScale;
+        private readonly Transform[] fingers = new Transform[24];
+        private Limb leftLeg, rightLeg, leftArm, rightArm;
+        private Transform hips, head;
+        private AnimationClip sampledWalk;
+        private struct Limb { public Transform upper, lower, end; }
+        private Limb CacheLimb(string side, string upper, string lower, string end) => new Limb
+            { upper = bones[side + upper], lower = bones[side + lower], end = bones[side + end] };
 
         public void Initialize()
         {
             foreach (Transform bone in Model.GetComponentsInChildren<Transform>()) bones[bone.name] = bone;
+            hips = bones["Hips"]; head = bones["Head"];
+            leftLeg = CacheLimb("Left", "UpLeg", "Leg", "Foot"); rightLeg = CacheLimb("Right", "UpLeg", "Leg", "Foot");
+            leftArm = CacheLimb("Left", "Arm", "ForeArm", "Hand"); rightArm = CacheLimb("Right", "Arm", "ForeArm", "Hand");
+            int index = 0;
+            foreach (string side in new[] { "Left", "Right" })
+                foreach (string finger in new[] { "Index", "Middle", "Ring", "Pinky" })
+                    for (int joint = 1; joint <= 3; joint++) fingers[index++] = bones[side + "Hand" + finger + joint];
             foreach (var animator in Model.GetComponentsInChildren<Animator>()) animator.enabled = false;
+            // SampleAnimation without an Animator is editor-only for Generic clips. A private legacy
+            // copy keeps these transform curves sampleable on our paused/slowed clock in the player.
+            var resourceOwner = GetComponent<GeneratedResources>() ?? gameObject.AddComponent<GeneratedResources>();
+            sampledWalk = resourceOwner.Own(Instantiate(Walk)); sampledWalk.legacy = true;
             modelOrigin = Model.transform.localPosition;
             modelScale=Model.transform.localScale;
             originalArmor=Model.GetComponentInChildren<SkinnedMeshRenderer>().sharedMaterial;
@@ -56,12 +74,11 @@ namespace Ganryujima.World
             float travel = Vector3.Distance(lastPosition, transform.position);
             lastPosition = transform.position;
             if (ai.State == OpponentState.Circle) walkTime += travel / 1.4f;
-            Walk.SampleAnimation(Model, ai.State == OpponentState.Circle ? Mathf.Repeat(walkTime, Walk.length) : 0);
+            sampledWalk.SampleAnimation(Model, ai.State == OpponentState.Circle ? Mathf.Repeat(walkTime, sampledWalk.length) : 0);
             // Sampled clips supply feet and hips. Gameplay alone owns movement and facing.
             Model.transform.localPosition = modelOrigin;
             Model.transform.localRotation = Quaternion.identity;
             float lean = ai.State == OpponentState.Recoil ? -18 : ai.State == OpponentState.Staggered ? 18 : ai.CounterOpen ? -8 : 0;
-            var hips = bones["Hips"];
             hips.rotation = Quaternion.AngleAxis(lean, transform.right) * hips.rotation;
             bool yielded = ai.State == OpponentState.Yield;
             if (yielded)
@@ -108,22 +125,19 @@ namespace Ganryujima.World
 
         private void CurlFingers()
         {
-            foreach (string side in new[] { "Left", "Right" })
-                foreach (string finger in new[] { "Index", "Middle", "Ring", "Pinky" })
-                    for (int joint=1;joint<=3;joint++)
-                        bones[side+"Hand"+finger+joint].localRotation *= Quaternion.Euler(-45,0,0);
+            Quaternion curl = Quaternion.Euler(-45, 0, 0);
+            for (int i = 0; i < fingers.Length; i++) fingers[i].localRotation *= curl;
         }
 
         public void PoseFinisher(float fall)
         {
-            Walk.SampleAnimation(Model,0);
+            sampledWalk.SampleAnimation(Model,0);
             Model.transform.localPosition=modelOrigin; Model.transform.localRotation=Quaternion.identity;
-            Transform hips=bones["Hips"];
             hips.position-=transform.up*(fall*.53f);
             hips.rotation=Quaternion.AngleAxis(fall*24,transform.right)*hips.rotation;
             PlantFoot("Left",new Vector3(-.17f,.10f,.12f));
             PlantFoot("Right",new Vector3(.17f,.10f,-.22f));
-            bones["Head"].rotation=Quaternion.AngleAxis(fall*18,transform.right)*bones["Head"].rotation;
+            head.rotation=Quaternion.AngleAxis(fall*18,transform.right)*head.rotation;
             sword.localPosition=new Vector3(.32f,Mathf.Lerp(1.05f,.40f,fall),.35f);
             sword.localRotation=Quaternion.Euler(65,20,-70);
             sword.gameObject.SetActive(true);
@@ -134,7 +148,8 @@ namespace Ganryujima.World
 
         private void PlantFoot(string side, Vector3 localTarget)
         {
-            Transform upper=bones[side+"UpLeg"], lower=bones[side+"Leg"], foot=bones[side+"Foot"];
+            Limb limb = side == "Left" ? leftLeg : rightLeg;
+            Transform upper = limb.upper, lower = limb.lower, foot = limb.end;
             Quaternion rotation=foot.rotation;
             Solve(upper,lower,foot,transform.TransformPoint(localTarget),transform.forward);
             foot.rotation=rotation;
@@ -142,7 +157,8 @@ namespace Ganryujima.World
 
         private void Arm(string side, Vector3 target, float sign)
         {
-            Transform upper=bones[side+"Arm"], lower=bones[side+"ForeArm"], hand=bones[side+"Hand"];
+            Limb limb = side == "Left" ? leftArm : rightArm;
+            Transform upper = limb.upper, lower = limb.lower, hand = limb.end;
             Solve(upper,lower,hand,target,transform.TransformDirection(new Vector3(sign*.65f,-1,-.15f)));
             hand.rotation=sword.rotation*Quaternion.Euler(0,sign*90,90);
         }

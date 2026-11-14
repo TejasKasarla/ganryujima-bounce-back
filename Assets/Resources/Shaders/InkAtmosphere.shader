@@ -43,6 +43,10 @@ Shader "Ganryujima/InkAtmosphere"
                 glow+=max(0,tex2D(_MainTex,i.uv-px*float2(0,4)).rgb-0.8);
                 color+=glow*_Bloom;
                 float luma=dot(color,float3(0.2126,0.7152,0.0722));
+                // A faint dry-ink edge on existing silhouettes; preserve skin and armor detail.
+                float neighboring=dot(tex2D(_MainTex,i.uv+px*float2(1,1)).rgb,float3(0.2126,0.7152,0.0722));
+                neighboring+=dot(tex2D(_MainTex,i.uv-px*float2(1,1)).rgb,float3(0.2126,0.7152,0.0722));
+                color*=1-saturate(abs(luma-neighboring*.5)*2.5)*.12;
                 color=lerp(luma.xxx,color,_Saturation);
                 color=(color-0.45)*1.06+0.45;
                 color*=float3(1.025,1.005,0.965);
