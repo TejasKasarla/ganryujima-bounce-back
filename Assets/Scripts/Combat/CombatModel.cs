@@ -5,7 +5,7 @@ using Ganryujima.Core;
 namespace Ganryujima.Combat
 {
     public enum Stance { Upper, Middle, Lower, Side }
-    public enum Impact { TargetHit, HeavyHit, Miss, Block, Parry, PlayerHit, GuardBreak, TargetBlock, CounterHit }
+    public enum Impact { TargetHit, HeavyHit, Miss, Block, Parry, PlayerHit, GuardBreak, TargetBlock, CounterHit, Dodge, Evade, Kiai }
     public enum TargetResponse { Hit, Block, Counter }
 
     /// <summary>Deterministic rules, independent of Unity input, visuals, and face tracking.</summary>
@@ -25,17 +25,24 @@ namespace Ganryujima.Combat
         public float BrokenRemaining { get; private set; }
         public float RetreatRemaining { get; private set; }
         public float RecoilRemaining { get; private set; }
+        public float Composure { get; private set; }
+        public float ParryWindow => Guarding ? guardWindow : Mathf.Lerp(GameConfig.LowComposureParry, GameConfig.HighComposureParry, Composure);
+        public float DodgeRemaining { get; private set; }
+        public float InvulnerableRemaining { get; private set; }
+        public float DodgeCooldown { get; private set; }
+        public float KiaiCooldown { get; private set; }
+        public int DodgeDirection { get; private set; }
         public int Parries { get; private set; }
         public string Message { get; private set; }
         public float MessageRemaining { get; private set; }
         public bool Over => Health <= 0 || TargetHealth <= 0;
         public bool Swinging => swingDuration > 0;
-        public bool ParryOpen => Guarding && clock - guardStart <= GameConfig.ParryWindow;
+        public bool ParryOpen => Guarding && clock - guardStart <= guardWindow;
         public float ChargeProgress => Mathf.Clamp01(Charge / GameConfig.HeavyChargeTime);
         public float SwingProgress => Swinging ? Mathf.Clamp01(swingAge / swingDuration) : 0;
         public float MovementScale => (Stamina < GameConfig.ExhaustedThreshold ? GameConfig.ExhaustedSpeed : 1) *
             (Guarding ? GameConfig.GuardSpeed : Charging ? GameConfig.ChargeSpeed : Swinging ? GameConfig.AttackSpeed : 1);
-        private float clock, lastSpend, guardStart, guardLock, retreatCooldown;
+        private float clock, lastSpend, guardStart, guardLock, retreatCooldown, guardWindow;
         private float swingAge, swingDuration, strikeAt;
         private bool resolved;
 
@@ -51,10 +58,40 @@ namespace Ganryujima.Combat
             clock = guardLock = retreatCooldown = swingAge = swingDuration = strikeAt = 0;
             lastSpend = guardStart = -100;
             Parries = 0;
+            Composure = GameConfig.NeutralComposure;
+            guardWindow = GameConfig.ParryWindow;
+            DodgeRemaining = InvulnerableRemaining = DodgeCooldown = KiaiCooldown = 0;
+            DodgeDirection = 0;
             Say("Close the distance. Match the tell, then time your guard.");
         }
 
-        private bool Free => !Over && !Swinging && BrokenRemaining <= 0 && RetreatRemaining <= 0;
+        private bool Free => !Over && !Swinging && BrokenRemaining <= 0 && RetreatRemaining <= 0 && DodgeRemaining <= 0;
+
+        public void SetComposure(float value)
+        {
+            Composure = float.IsNaN(value) || float.IsInfinity(value) ? GameConfig.NeutralComposure : Mathf.Clamp01(value);
+        }
+
+        public bool TryDodge(int direction)
+        {
+            if ((direction != -1 && direction != 1) || !Free || DodgeCooldown > 0 || Stamina < GameConfig.DodgeCost) return false;
+            CancelHeldInput(); Spend(GameConfig.DodgeCost);
+            DodgeDirection = direction;
+            DodgeRemaining = GameConfig.DodgeDuration;
+            InvulnerableRemaining = GameConfig.DodgeInvulnerability;
+            DodgeCooldown = GameConfig.DodgeCooldown;
+            Emit(Impact.Dodge, direction < 0 ? "DODGE LEFT" : "DODGE RIGHT");
+            return true;
+        }
+
+        public bool TryKiai()
+        {
+            if (!Free || Charging || KiaiCooldown > 0 || Stamina < GameConfig.KiaiCost) return false;
+            EndGuard(); Spend(GameConfig.KiaiCost);
+            KiaiCooldown = GameConfig.KiaiCooldown;
+            Emit(Impact.Kiai, "KIAI — break their rhythm!");
+            return true;
+        }
 
         public bool BeginCharge()
         {
@@ -85,6 +122,7 @@ namespace Ganryujima.Combat
         public bool BeginGuard()
         {
             if (!Free || Charging || Guarding || guardLock > 0 || Stamina < GameConfig.GuardMinimum) return false;
+            guardWindow = ParryWindow; // Snapshot on press: changing composure cannot reopen an old guard.
             Guarding = true;
             guardStart = clock;
             return true;
@@ -105,13 +143,17 @@ namespace Ganryujima.Combat
             Spend(GameConfig.RetreatCost);
             RetreatRemaining = GameConfig.RetreatDuration;
             retreatCooldown = GameConfig.RetreatCooldown;
-            return true; // Footwork only; no i-frames. Face dodge belongs to milestone 4.
+            return true; // Keyboard retreat is footwork only. Face dodge has its own i-frames.
         }
 
         public void Tick(float dt, float distance, float aimAngle)
         {
             if (dt <= 0 || Over) return;
             clock += dt;
+            DodgeRemaining = Mathf.Max(0, DodgeRemaining - dt);
+            InvulnerableRemaining = Mathf.Max(0, InvulnerableRemaining - dt);
+            DodgeCooldown = Mathf.Max(0, DodgeCooldown - dt);
+            KiaiCooldown = Mathf.Max(0, KiaiCooldown - dt);
             guardLock = Mathf.Max(0, guardLock - dt);
             retreatCooldown = Mathf.Max(0, retreatCooldown - dt);
             BrokenRemaining = Mathf.Max(0, BrokenRemaining - dt);
@@ -153,6 +195,7 @@ namespace Ganryujima.Combat
             float reach = GameConfig.PracticeReach, float damage = GameConfig.PracticeDamage)
         {
             if (Over || distance > reach || RecoilRemaining > 0) return;
+            if (InvulnerableRemaining > 0) { Emit(Impact.Evade, "EVADED — find your opening."); return; }
             if (Guarding && Stance == zone && facingAngle <= GameConfig.GuardAngle)
             {
                 if (ParryOpen)

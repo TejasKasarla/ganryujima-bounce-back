@@ -21,6 +21,9 @@ namespace Ganryujima.Core
         private ArimaArt opponentArt;
         public ArimaOpponent Opponent => opponent;
         private CombatPresentation presentation;
+        private FaceGameplay faceGameplay;
+        private InkAtmosphere atmosphere;
+        public FaceGameplay FaceGameplay => faceGameplay;
         private bool ready, entered, debugHud;
         private float yaw, pitch, verticalVelocity;
         private Vector2 stanceMotion;
@@ -55,12 +58,13 @@ namespace Ganryujima.Core
             view.farClipPlane = 320;
             view.clearFlags = CameraClearFlags.Skybox;
             view.allowHDR = true;
-            view.gameObject.AddComponent<InkAtmosphere>();
+            atmosphere = view.gameObject.AddComponent<InkAtmosphere>();
             view.backgroundColor = new Color(0.82f, 0.81f, 0.75f);
             view.gameObject.AddComponent<AudioListener>();
             Transform sword = ArenaBuilder.BuildKatana(view.transform);
             combat = new CombatModel();
             opponent = new ArimaOpponent(combat);
+            faceGameplay = new FaceGameplay(combat, opponent);
             opponentArt.Tick(opponent, 1);
             presentation = new CombatPresentation(combat, view, sword, target);
             face = FaceInputFactory.createFaceInput();
@@ -75,26 +79,31 @@ namespace Ganryujima.Core
         {
             // Unity cannot serialize interface/model instances across a script reload in Play Mode.
             // Keep a stale session quiet until Play is restarted rather than spamming exceptions.
-            if (!ready || face == null || combat == null || opponent == null || presentation == null) return;
+            if (!ready || face == null || combat == null || opponent == null || presentation == null || faceGameplay == null) return;
             face.tick(); // First gameplay action, once per frame, including paused/released frames.
             state = face.getState();
             FramesTicked++;
             if (KeyInput.GetKeyDown(KeyCode.F2)) debugHud = !debugHud; // F1 belongs to Dev A's camera diagnostics.
             if (KeyInput.GetKeyDown(KeyCode.Escape)) SetCapture(false);
             if (KeyInput.GetKeyDown(KeyCode.R)) Restart();
+            faceGameplay.Observe(state, Captured);
+            atmosphere.SetComposure(combat.Composure);
             if (!Captured) return; // Freeze combat and opponent timers together; no global timeScale.
             float realDt = Mathf.Min(Time.unscaledDeltaTime, GameConfig.MaximumDelta);
-            float dt = presentation.Stopped ? 0 : realDt;
+            faceGameplay.Advance(realDt, Distance, AimAngle);
+            float dt = presentation.Stopped ? 0 : realDt * faceGameplay.LocalTimeScale;
             if (dt > 0 && !combat.Over)
             {
                 ReadLookAndCombat(dt);
+                faceGameplay.ApplyGestures(true, Distance, AimAngle);
                 MovePlayer(dt);
                 combat.Tick(dt, Distance, AimAngle);
                 opponent.Tick(dt, new Vector2(player.transform.position.x, player.transform.position.z), AimAngle);
                 opponentArt.Tick(opponent, dt);
             }
             presentation.Tick(realDt, dt);
-            view.transform.localPosition = Vector3.up * GameConfig.EyeHeight + presentation.CameraOffset;
+            view.transform.localPosition = Vector3.up * GameConfig.EyeHeight + presentation.CameraOffset + Vector3.right * (faceGameplay.Lean * GameConfig.LeanCameraOffset);
+            view.transform.localRotation = Quaternion.Euler(pitch, 0, -faceGameplay.Lean * GameConfig.LeanCameraRoll);
             if (combat.Over) SetCapture(false);
         }
 
@@ -131,7 +140,8 @@ namespace Ganryujima.Core
             float x = (KeyInput.GetKey(KeyCode.D) ? 1 : 0) - (KeyInput.GetKey(KeyCode.A) ? 1 : 0);
             float z = (KeyInput.GetKey(KeyCode.W) ? 1 : 0) - (KeyInput.GetKey(KeyCode.S) ? 1 : 0);
             var direction = Vector3.ClampMagnitude(new Vector3(x, 0, z), 1);
-            Vector3 velocity = combat.RetreatRemaining > 0 ? -player.transform.forward * GameConfig.RetreatSpeed
+            Vector3 velocity = combat.DodgeRemaining > 0 ? player.transform.right * (combat.DodgeDirection * GameConfig.DodgeSpeed)
+                : combat.RetreatRemaining > 0 ? -player.transform.forward * GameConfig.RetreatSpeed
                 : player.transform.TransformDirection(direction) * (GameConfig.WalkSpeed * combat.MovementScale);
             var horizontal = velocity * dt;
             var next = player.transform.position + horizontal;
@@ -156,6 +166,7 @@ namespace Ganryujima.Core
         {
             if (!ready) return;
             combat.Reset(); opponent.Reset(); opponentArt.Tick(opponent, 1); presentation.Reset();
+            faceGameplay.Reset();
             player.enabled = false;
             player.transform.SetPositionAndRotation(new Vector3(0, 0, GameConfig.SpawnDistance), Quaternion.identity);
             player.enabled = true;
@@ -169,23 +180,23 @@ namespace Ganryujima.Core
         private void SetCapture(bool capture)
         {
             entered = capture;
-            if (!capture) { combat?.CancelHeldInput(); stanceMotion = Vector2.zero; }
+            if (!capture) { combat?.CancelHeldInput(); faceGameplay?.Observe(state, false); stanceMotion = Vector2.zero; }
             Cursor.lockState = capture ? CursorLockMode.Locked : CursorLockMode.None;
             Cursor.visible = !capture;
         }
         private void OnApplicationFocus(bool focus) { if (!focus) SetCapture(false); }
         private void OnDisable() { SetCapture(false); }
-        private void OnDestroy() { face?.stop(); opponent?.Dispose(); presentation?.Dispose(); }
+        private void OnDestroy() { face?.stop(); faceGameplay?.Dispose(); opponent?.Dispose(); presentation?.Dispose(); }
         private void OnGUI()
         {
-            if (ready && (face == null || combat == null || presentation == null))
+            if (ready && (face == null || combat == null || presentation == null || faceGameplay == null))
             {
                 GUI.Box(new Rect(25, 25, 590, 60), "Scripts changed during Play. Stop Play, then press Play again to reload the court.");
                 return;
             }
             Matrix4x4 previousMatrix = GUI.matrix;
             Color previousColor = GUI.color;
-            try { CombatHud.Draw(combat, opponent, state, ready, Captured, Distance, Enter, Restart, inputError, debugHud); }
+            try { CombatHud.Draw(combat, opponent, state, ready, Captured, Distance, Enter, Restart, inputError, debugHud, faceGameplay); }
             finally { GUI.matrix = previousMatrix; GUI.color = previousColor; }
         }
     }

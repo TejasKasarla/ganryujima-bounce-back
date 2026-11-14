@@ -11,6 +11,7 @@ namespace Ganryujima.Combat
     {
         private readonly CombatModel combat;
         private float age;
+        private float staggerDuration = GameConfig.ArimaStagger;
         private int cycle;
         private bool struck, feint;
         public OpponentState State { get; private set; }
@@ -22,6 +23,17 @@ namespace Ganryujima.Combat
         public float TellProgress => Telling ? Mathf.Clamp01(age / GameConfig.ArimaWindup) : 0;
         public float StateAge => age;
         public float CounterRemaining => CounterOpen ? Mathf.Max(0, GameConfig.ArimaCounter - age) : 0;
+
+        public string ReadTell(bool focused) => focused && Telling ? (feint ? "FEINT — wait for the second tell" : "COMMITTED CUT") : null;
+        public bool ReceiveKiai(float distance, float angle)
+        {
+            if (combat.Over || distance > GameConfig.KiaiRange || angle > GameConfig.KiaiAngle) return false;
+            // Do not shorten a counter opportunity the player has already earned.
+            if (State == OpponentState.Recoil || CounterOpen) return true;
+            Set(OpponentState.Staggered);
+            staggerDuration = GameConfig.KiaiStagger;
+            return true;
+        }
 
         public ArimaOpponent(CombatModel combat)
         {
@@ -36,7 +48,7 @@ namespace Ganryujima.Combat
             cycle = 0; Zone = Stance.Upper; feint = struck = false;
             Set(OpponentState.Idle);
         }
-        private void Set(OpponentState next) { State = next; age = 0; struck = false; }
+        private void Set(OpponentState next) { State = next; age = 0; struck = false; staggerDuration = GameConfig.ArimaStagger; }
         private TargetResponse Defend(bool heavy, Stance zone)
         {
             if (CounterOpen) return TargetResponse.Counter;
@@ -115,7 +127,7 @@ namespace Ganryujima.Combat
                     if (age >= GameConfig.ArimaCounter) Set(OpponentState.Guard);
                     break;
                 case OpponentState.Staggered:
-                    if (age >= GameConfig.ArimaStagger) Set(OpponentState.Guard);
+                    if (age >= staggerDuration) Set(OpponentState.Guard);
                     break;
             }
         }

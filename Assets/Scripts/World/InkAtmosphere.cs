@@ -22,6 +22,10 @@ namespace Ganryujima.World
             if (material == null) Graphics.Blit(source, destination);
             else Graphics.Blit(source, destination, material);
         }
+        public void SetComposure(float composure)
+        {
+            if (material != null) material.SetFloat("_Stress", Mathf.Clamp01((GameConfig.NeutralComposure - composure) * 2));
+        }
         private void OnDestroy() { if (material != null) Destroy(material); }
     }
 }

@@ -16,7 +16,7 @@ namespace Ganryujima.UI
         private static Font serif;
 
         public static void Draw(CombatModel combat, ArimaOpponent opponent, FaceState face, bool ready,
-            bool captured, float distance, Action enter, Action restart, string inputError, bool debug = false)
+            bool captured, float distance, Action enter, Action restart, string inputError, bool debug = false, FaceGameplay faceGameplay = null)
         {
             float scale = Mathf.Max(0.6f, Screen.height / 900f);
             GUI.matrix = Matrix4x4.Scale(Vector3.one * scale);
@@ -58,7 +58,7 @@ namespace Ganryujima.UI
                 Bar(new Rect(42, height - 104, 275, 4), combat.Health / GameConfig.MaximumHealth, Vermilion);
                 GUI.Label(new Rect(42, height - 86, 270, 24), "BREATH", tiny);
                 Bar(new Rect(42, height - 58, 275, 3), combat.Stamina / GameConfig.MaximumStamina, Gold);
-                string action = combat.BrokenRemaining > 0 ? "BROKEN GUARD" : combat.Charging ? (combat.ChargeProgress >= 1 ? "HEAVY READY" : "DRAWING STRENGTH") : combat.ParryOpen ? "PARRY" : combat.Guarding ? "GUARD" : combat.Swinging ? "CUT" : "READY";
+                string action = combat.DodgeRemaining > 0 ? (combat.InvulnerableRemaining > 0 ? "DODGE / INVULNERABLE" : "DODGE RECOVERY") : combat.BrokenRemaining > 0 ? "BROKEN GUARD" : combat.Charging ? (combat.ChargeProgress >= 1 ? "HEAVY READY" : "DRAWING STRENGTH") : combat.ParryOpen ? "PARRY" : combat.Guarding ? "GUARD" : combat.Swinging ? "CUT" : "READY";
                 GUI.Label(new Rect(width / 2 - 230, height - 99, 460, 35), combat.Stance.ToString().ToUpperInvariant() + "  /  " + action, centered);
                 string spacing = distance > GameConfig.LightReach ? "BEYOND REACH" : distance < GameConfig.TooCloseDistance ? "CLOSE QUARTERS" : "WITHIN REACH";
                 GUI.Label(new Rect(width / 2 - 230, height - 64, 460, 30), $"{distance:F1} m   ·   {spacing}", new GUIStyle(tiny) { alignment = TextAnchor.MiddleCenter });
@@ -68,8 +68,18 @@ namespace Ganryujima.UI
                 if (opponent.Telling)
                 {
                     Fill(new Rect(width / 2 - 190, height / 2 - 119, 380, 57), new Color(0.05f, 0.09f, 0.09f, 0.8f));
-                    GUI.Label(new Rect(width / 2 - 180, height / 2 - 114, 360, 35), "INCOMING  /  " + opponent.Zone.ToString().ToUpperInvariant(), centered);
+                    GUI.Label(new Rect(width / 2 - 180, height / 2 - 114, 360, 35), (faceGameplay?.FeintHint?.StartsWith("FEINT") == true ? "FEINT  /  " : "INCOMING  /  ") + opponent.Zone.ToString().ToUpperInvariant(), centered);
                     Bar(new Rect(width / 2 - 160, height / 2 - 70, 320, 2), opponent.TellProgress, Gold);
+                }
+                if (faceGameplay?.FeintHint != null)
+                    GUI.Label(new Rect(width/2-260,height/2-156,520,30),faceGameplay.FeintHint,centered);
+                if (faceGameplay != null)
+                {
+                    Fill(new Rect(width-280,height-250,245,170),new Color(.06f,.10f,.10f,.85f));
+                    string dodge = combat.DodgeCooldown > 0 ? $"{combat.DodgeCooldown:F1}s" : "READY";
+                    string kiai = combat.KiaiCooldown > 0 ? $"{combat.KiaiCooldown:F1}s" : "READY";
+                    GUI.Label(new Rect(width-264,height-240,220,150),
+                        $"FACE / {(faceGameplay.HasSignal ? "ACTIVE" : "NEUTRAL FALLBACK")}\nComposure {combat.Composure:F2} · Parry {combat.ParryWindow*1000:F0} ms\nQ/E dodge  {dodge}\nF kiai  {kiai}\nGaze {(faceGameplay.GazeFocused ? "FOCUSED" : "UNFOCUSED")} · Time ×{faceGameplay.LocalTimeScale:F2}\nC tense · X center gaze",tiny);
                 }
                 string tell = opponent.CounterOpen ? $"COUNTER NOW  /  {opponent.CounterRemaining:F1}s" :
                     opponent.State == OpponentState.Feint ? "WITHDRAWAL — watch for a new zone" :
@@ -80,9 +90,9 @@ namespace Ganryujima.UI
             }
             if (debug)
             {
-                Fill(new Rect(width - 480, 110, 445, 235), new Color(0.06f, 0.10f, 0.10f, 0.95f));
-                GUI.Label(new Rect(width - 460, 125, 410, 205),
-                    $"FIELD NOTES / ARIMA: {opponent.State}\nTracking {face.tracking} · Calibrated {face.calibrated}\nComposure {face.composure:F2} · Lean {face.leanX:F1} · Gaze {face.gaze}\nLean event {face.leanTrigger} · Kiai {face.kiai} · Nod {face.nod}\nShake {face.shake} · Wink {face.wink}\n\nStance: ↑ upper / ↓ lower / ← middle / → side\nFallback: 1 upper / 2 middle / 3 lower / 4 side\nQ/E lean · F kiai · Y/N nod/shake · C composure\nZ/X/V gaze · G wink (readout only)", tiny);
+                Fill(new Rect(width - 480, 110, 445, 330), new Color(0.06f, 0.10f, 0.10f, 0.95f));
+                GUI.Label(new Rect(width - 460, 125, 410, 310),
+                    $"FIELD NOTES / ARIMA: {opponent.State}\nTracking {face.tracking} · Calibrated {face.calibrated}\nComposure {face.composure:F2} · Lean {face.leanX:F1} · Gaze {face.gaze}\nLean event {face.leanTrigger} · Kiai {face.kiai} · Nod {face.nod}\nShake {face.shake} · Wink {face.wink}\nYaw {face.headYaw:F1} · Pitch {face.headPitch:F1} · Roll {face.headRoll:F1}\nTimestamp {face.timestamp:F0} ms\nI-frames {combat.InvulnerableRemaining:F2}s · Dodge {combat.DodgeCooldown:F1}s\nKiai {combat.KiaiCooldown:F1}s · Parry {combat.ParryWindow*1000:F0}ms\nLocal time ×{faceGameplay?.LocalTimeScale:F2} · Buffered {faceGameplay?.BufferedGesture}\n\nStance: ↑ upper / ↓ lower / ← middle / → side\nFallback: 1 upper / 2 middle / 3 lower / 4 side\nQ/E dodge · F kiai · Y/N nod/shake · C composure\nZ/X/V gaze · Nod/shake/wink reserved for story", tiny);
             }
             GUI.color = Color.white;
         }

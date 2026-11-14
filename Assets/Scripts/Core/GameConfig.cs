@@ -89,5 +89,30 @@ namespace Ganryujima.Core
         public const float ArimaLungeSpeed = 1.2f;
         public const float ArimaRecoilSpeed = 0.9f;
         public const float CounterDamageMultiplier = 1.5f;
+        // Face gameplay (provider thresholds remain exclusively Dev A's responsibility).
+        public const float NeutralComposure = 0.5f;
+        public const float LowComposureParry = 0.10f;
+        public const float HighComposureParry = 0.26f;
+        public const float DodgeDuration = 0.28f;
+        public const float DodgeInvulnerability = 0.18f;
+        public const float DodgeCooldown = 0.85f;
+        public const float DodgeSpeed = 5.5f;
+        public const float DodgeCost = 14f;
+        public const float KiaiCooldown = 8f;
+        public const float KiaiCost = 18f;
+        public const float KiaiRange = 3.8f;
+        public const float KiaiAngle = 65f;
+        public const float KiaiStagger = 1.1f;
+        public const float KiaiEffectDuration = 0.45f;
+        public const float GestureBuffer = 0.18f;
+        public const float CalmThreshold = 0.7f;
+        public const float CalmClashScale = 0.72f;
+        public const float CalmClashDuration = 0.42f;
+        public const float GazeFocusDuration = 0.15f;
+        public const float GazeFocusAngle = 20f;
+        public const float GazeFocusRange = 5f;
+        public const float LeanCameraOffset = 0.10f;
+        public const float LeanCameraRoll = 3f;
+        public const float LeanSmoothing = 10f;
     }
 }

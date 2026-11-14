@@ -13,6 +13,9 @@ namespace Ganryujima.Combat
         private readonly Transform[] sparks = new Transform[GameConfig.SparkCount];
         private readonly Vector3[] velocities = new Vector3[GameConfig.SparkCount];
         private readonly Material sparkMaterial;
+        private readonly Material ringMaterial;
+        private readonly LineRenderer ring;
+        private float ringAge = float.MaxValue;
         private float hitStop, shake, sparkAge = float.MaxValue;
         private float visualClock;
         public bool Stopped => hitStop > 0;
@@ -22,6 +25,12 @@ namespace Ganryujima.Combat
         {
             this.combat = combat; this.camera = camera; this.sword = sword; this.target = target;
             sparkMaterial = new Material(Resources.Load<Material>("Materials/Flat")) { color = new Color(1f, 0.74f, 0.24f) };
+            ringMaterial = new Material(Resources.Load<Shader>("Shaders/KiaiRing"));
+            ring = new GameObject("Kiai shockwave (pooled)").AddComponent<LineRenderer>();
+            ring.sharedMaterial = ringMaterial; ring.useWorldSpace = false; ring.loop = true;
+            ring.positionCount = 64; ring.widthMultiplier = 0.045f;
+            for (int i=0;i<64;i++) { float angle=i*Mathf.PI*2/64; ring.SetPosition(i,new Vector3(Mathf.Cos(angle),0,Mathf.Sin(angle))); }
+            ring.gameObject.SetActive(false);
             var pool = new GameObject("Clash Sparks (pooled)").transform;
             for (int i = 0; i < sparks.Length; i++)
             {
@@ -39,7 +48,17 @@ namespace Ganryujima.Combat
 
         private void OnImpact(Impact impact)
         {
-            if (impact == Impact.Miss) return;
+            if (impact == Impact.Miss || impact == Impact.Dodge || impact == Impact.Evade) return;
+            if (impact == Impact.Kiai)
+            {
+                shake = GameConfig.ShakeDuration;
+                ringAge = 0;
+                ring.transform.position = new Vector3(camera.transform.position.x,0.08f,camera.transform.position.z);
+                ring.transform.localScale = Vector3.one * 0.1f;
+                ring.startColor = ring.endColor = new Color(1,.83f,.5f,.7f);
+                ring.gameObject.SetActive(true);
+                return;
+            }
             hitStop = impact == Impact.Parry ? GameConfig.ParryHitStop : impact == Impact.HeavyHit ? GameConfig.HeavyHitStop : GameConfig.HitStop;
             shake = GameConfig.ShakeDuration;
             bool onTarget = impact == Impact.TargetHit || impact == Impact.HeavyHit || impact == Impact.CounterHit;
@@ -57,6 +76,14 @@ namespace Ganryujima.Combat
 
         public void Tick(float realDt, float gameDt)
         {
+            ringAge += realDt;
+            if (ringAge >= GameConfig.KiaiEffectDuration) ring.gameObject.SetActive(false);
+            else
+            {
+                float progress = ringAge / GameConfig.KiaiEffectDuration;
+                ring.transform.localScale = Vector3.one * Mathf.Lerp(.1f,GameConfig.KiaiRange,progress);
+                ring.startColor = ring.endColor = new Color(1,.83f,.5f,(1-progress)*.7f);
+            }
             hitStop = Mathf.Max(0, hitStop - realDt);
             shake = Mathf.Max(0, shake - realDt);
             visualClock += realDt;
@@ -99,6 +126,7 @@ namespace Ganryujima.Combat
         public void Reset()
         {
             hitStop = shake = 0;
+            ringAge = float.MaxValue; ring.gameObject.SetActive(false);
             sparkAge = float.MaxValue;
             CameraOffset = Vector3.zero;
             foreach (var spark in sparks) spark.gameObject.SetActive(false);
@@ -108,6 +136,8 @@ namespace Ganryujima.Combat
         {
             combat.Impacted -= OnImpact;
             Object.Destroy(sparkMaterial);
+            Object.Destroy(ringMaterial);
+            if (ring != null) Object.Destroy(ring.gameObject);
         }
     }
 }

@@ -13,6 +13,7 @@ namespace Ganryujima.Editor
         {
             CombatChecks.Verify();
             OpponentChecks.Verify();
+            FaceGameplayChecks.Verify();
             ProjectSetup.CreateScene();
             SessionState.SetBool("GanryujimaCapture", true);
             EditorApplication.EnterPlaymode();
@@ -45,6 +46,7 @@ namespace Ganryujima.Editor
                         camera.transform.rotation = Quaternion.Euler(6, 0, 0);
                         Save(camera, Path.Combine(directory, "duel.png"));
                         await CaptureOpponentPoses(game, camera, directory);
+                        await CaptureFaceFeedback(game, camera, directory);
                         Debug.Log("GANRYUJIMA VISUAL CAPTURE PASS: " + directory);
                         EditorApplication.Exit(0);
                     }
@@ -114,6 +116,36 @@ namespace Ganryujima.Editor
             await System.Threading.Tasks.Task.Delay(100);
             Save(camera,Path.Combine(directory,"counter.png"));
             Debug.Log("SAMURAI POSE CHECK PASS: imported model, walk, windup, parry and counter render.");
+        }
+
+        private static async System.Threading.Tasks.Task CaptureFaceFeedback(GameLoop game, Camera camera, string directory)
+        {
+            game.Combat.Reset(); game.Opponent.Reset(); game.FaceGameplay.Reset();
+            var sample = new Ganryujima.Input.Face.FaceState { tracking=true,calibrated=true,composure=1,gaze=Ganryujima.Input.Face.Gaze.center,leanTrigger=1 };
+            game.FaceGameplay.Observe(sample,true);
+            game.FaceGameplay.ApplyGestures(true,2,0);
+            var player=UnityEngine.Object.FindFirstObjectByType<CharacterController>();
+            Vector3 before=player.transform.position;
+            typeof(GameLoop).GetMethod("MovePlayer",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).Invoke(game,new object[] { .1f });
+            if(player.transform.position.x-before.x<.4f || game.Combat.InvulnerableRemaining<=0)
+                throw new Exception("Face dodge did not move the real CharacterController laterally with i-frames.");
+            game.Combat.Reset(); game.FaceGameplay.Reset(); sample.leanTrigger=0; sample.kiai=true;
+            game.FaceGameplay.Observe(sample,true); game.FaceGameplay.ApplyGestures(true,2,0);
+            var presentation=(Ganryujima.Combat.CombatPresentation)typeof(GameLoop).GetField("presentation",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).GetValue(game);
+            presentation.Tick(.12f,0);
+            if (presentation.CameraOffset.sqrMagnitude <= 0) throw new Exception("Kiai camera shake did not start.");
+            presentation.Tick(.20f,0); // Ground ring enters the first-person view as it expands beyond two metres.
+            var ring=GameObject.Find("Kiai shockwave (pooled)");
+            if(ring==null || game.Opponent.State!=Ganryujima.Combat.OpponentState.Staggered)
+                throw new Exception("Kiai did not stagger or activate its pooled visual.");
+            await System.Threading.Tasks.Task.Delay(100);
+            Save(camera,Path.Combine(directory,"kiai.png"));
+            ring.SetActive(false);
+            var atmosphere=camera.GetComponent<Ganryujima.World.InkAtmosphere>();
+            atmosphere.SetComposure(0);
+            Save(camera,Path.Combine(directory,"low-composure.png"));
+            atmosphere.SetComposure(GameConfig.NeutralComposure);
+            Debug.Log("FACE INTEGRATION PASS: lateral controller dodge, i-frames, kiai stagger/ring, composure shader.");
         }
     }
 }
