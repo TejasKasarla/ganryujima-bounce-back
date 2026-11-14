@@ -1,0 +1,19 @@
+using System; using System.IO; using System.Linq; using UnityEditor; using UnityEngine;
+namespace Ganryujima.Editor { public static class AnimationBake {
+[Serializable] public class Library { public Motion[] clips; }
+[Serializable] public class Motion { public string name; public float duration; public Frame[] frames; }
+[Serializable] public class Frame { public Vector3 hand; public Quaternion rotation; public Quaternion torso; }
+public static void Bake() { AssetDatabase.Refresh(); string path="Assets/AnimationReview/UAL1.fbx";
+var go=UnityEngine.Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>(path));
+var bones=go.GetComponentsInChildren<Transform>().ToDictionary(t=>t.name,t=>t);
+var clips=AssetDatabase.LoadAllAssetsAtPath(path).OfType<AnimationClip>().Where(c=>!c.name.StartsWith("__preview__")).ToArray();
+var idle=clips.Single(c=>c.name=="Armature|Sword_Idle"); idle.SampleAnimation(go,0);
+var hand=bones["hand_r"]; var chest=bones["spine_03"];
+Vector3 origin=go.transform.InverseTransformPoint(hand.position); Quaternion rotation=hand.rotation, torso=chest.rotation;
+float height=Mathf.Abs(bones["Head"].position.y-bones["foot_r"].position.y); Debug.Log("BAKE HEIGHT "+height);
+var names=new[]{"Sword_Idle","Sword_Attack_Standing","Sword_Attack","Hit_Chest","Dodge_Left","Dodge_Right","Death01"};
+var library=new Library { clips=names.Select(name=> { var clip=clips.Single(c=>c.name=="Armature|"+name); int count=Mathf.CeilToInt(clip.length*30)+1;
+var motion=new Motion {name=name,duration=clip.length,frames=new Frame[count]};
+for(int i=0;i<count;i++) { clip.SampleAnimation(go,(float)i/(count-1)*clip.length); motion.frames[i]=new Frame {hand=(go.transform.InverseTransformPoint(hand.position)-origin)/height,rotation=hand.rotation*Quaternion.Inverse(rotation),torso=chest.rotation*Quaternion.Inverse(torso)}; } return motion; }).ToArray() };
+Directory.CreateDirectory("Assets/Resources/Animation"); File.WriteAllText("Assets/Resources/Animation/SwordMotions.json",JsonUtility.ToJson(library)); UnityEngine.Object.DestroyImmediate(go); AssetDatabase.Refresh(); Debug.Log("ANIMATION BAKE PASS"); }
+} }

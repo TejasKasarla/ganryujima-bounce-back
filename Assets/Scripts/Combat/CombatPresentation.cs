@@ -121,8 +121,19 @@ namespace Ganryujima.Combat
                 angles += new Vector3(-45 + 115 * p, 25 * cut, -65 + 130 * p) * cut;
                 position.z += cut * 0.16f;
             }
+            string motionName = combat.Swinging ? (combat.Heavy ? "Sword_Attack" : "Sword_Attack_Standing") : "Sword_Idle";
+            // Strike contact maps to the end of the wind-up, independently of recovery length.
+            float contact = combat.Heavy ? GameConfig.HeavyWindup / (GameConfig.HeavyWindup + GameConfig.HeavyRecovery)
+                : GameConfig.LightWindup / (GameConfig.LightWindup + GameConfig.LightRecovery);
+            float phase = combat.Swinging ? (combat.SwingProgress < contact ? Mathf.Lerp(0, .48f, combat.SwingProgress / contact)
+                : Mathf.Lerp(.48f, 1, (combat.SwingProgress - contact) / (1 - contact))) : Mathf.Repeat(visualClock / 1.666667f, 1);
+            var motion = SwordMotion.Sample(motionName, phase);
+            float weight = combat.Swinging ? .48f : combat.Guarding ? .025f : .08f;
+            position += Vector3.ClampMagnitude(motion.hand, .65f) * weight;
+            if (combat.DodgeRemaining > 0) position += new Vector3(-combat.DodgeDirection * .10f, -.08f, -.05f);
+            Quaternion poseRotation = Quaternion.Euler(angles) * Quaternion.Slerp(Quaternion.identity, motion.rotation, weight * .6f);
             sword.localPosition = Vector3.Lerp(sword.localPosition, position, 1 - Mathf.Exp(-18 * dt));
-            sword.localRotation = Quaternion.Slerp(sword.localRotation, Quaternion.Euler(angles), 1 - Mathf.Exp(-18 * dt));
+            sword.localRotation = Quaternion.Slerp(sword.localRotation, poseRotation, 1 - Mathf.Exp(-18 * dt));
         }
 
         public void Reset()

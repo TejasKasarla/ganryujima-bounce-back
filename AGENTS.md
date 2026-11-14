@@ -111,3 +111,6 @@ Q/E = lean left/right (sets leanX and fires leanTrigger), F = kiai, N = shake, Y
 
 ## Working style
 Work in small milestones, keep the project runnable after each, and summarize what changed and how to test it. Where something is unspecified, make a sensible choice and note it in the README.
+
+Animation follow-up: Quaternius CC0 sword hand/chest tracks are adapted through World/SwordMotion.cs and Resources/Animation/SwordMotions.json for boss and first-person weapon motion. This is layered motion plus existing IK, not a full humanoid controller replacement. Preserve provenance/license. Boss katana builds must omit both procedural hands when hands=false. The user's uploaded TikTok clip is a visual reference only.
+

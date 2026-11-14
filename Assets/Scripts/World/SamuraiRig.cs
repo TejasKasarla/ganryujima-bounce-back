@@ -113,9 +113,21 @@ namespace Ganryujima.World
             if (ai.State == OpponentState.Guard) pose = Vector3.Lerp(rest,raised,.5f);
             if (yielded) { pose = new Vector3(100,0,30); grip.y -= .3f; }
             grip.y += Mathf.Sin(clock*2)*.006f;
+            string motionName = "Sword_Idle";
+            float phase = Mathf.Repeat(clock / 1.666667f, 1), motionWeight = .12f;
+            if (ai.Telling) { motionName = "Sword_Attack_Standing"; phase = ai.TellProgress * .28f; motionWeight = .42f; }
+            else if (ai.State == OpponentState.Strike) { motionName = ai.Id == OpponentId.Kojiro ? "Sword_Attack" : "Sword_Attack_Standing"; phase = Mathf.Lerp(.28f, .76f, Mathf.Clamp01(ai.StateAge / GameConfig.ArimaStrike)); motionWeight = .65f; }
+            else if (ai.State == OpponentState.Recover) { motionName = "Sword_Attack_Standing"; phase = Mathf.Lerp(.76f, 1, Mathf.Clamp01(ai.StateAge / .65f)); motionWeight = .42f * (1 - Mathf.Clamp01(ai.StateAge / .65f)); }
+            else if (ai.State == OpponentState.Recoil || ai.State == OpponentState.Staggered) { motionName = "Hit_Chest"; phase = Mathf.Clamp01(ai.StateAge / .55f); motionWeight = .55f; }
+            var motion = SwordMotion.Sample(motionName, phase);
+            grip += Vector3.ClampMagnitude(motion.hand, .65f) * motionWeight;
+            // Keep the zone-specific blade silhouette while adding the sourced shoulder/hand arc.
+            Quaternion authoredRotation = Quaternion.Euler(pose) * Quaternion.Slerp(Quaternion.identity, motion.rotation, motionWeight * .48f);
+            var chest = bones["Spine02"];
+            chest.rotation = transform.rotation * Quaternion.Slerp(Quaternion.identity, motion.torso, motionWeight * .5f) * Quaternion.Inverse(transform.rotation) * chest.rotation;
             float blend = 1-Mathf.Exp(-22*dt);
             swordPosition = Vector3.Lerp(swordPosition,grip,blend);
-            swordRotation = Quaternion.Slerp(swordRotation,Quaternion.Euler(pose),blend);
+            swordRotation = Quaternion.Slerp(swordRotation,authoredRotation,blend);
             sword.localPosition = swordPosition;
             sword.localRotation = swordRotation;
             Arm("Right", sword.TransformPoint(new Vector3(0,.04f,0)), 1);

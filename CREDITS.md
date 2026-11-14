@@ -23,3 +23,5 @@ Dev A's optional companion tracker uses [MediaPipe Tasks Vision 0.10.21](https:/
 ## Historical context
 
 [Japan Tourism Agency: Ganryujima](https://www.mlit.go.jp/tagengo-db/en/R5-00678.html) and [Shimonoseki official tourism](https://shimonoseki.travel/about-en/) provide location/duel background. Dialogue, mercy decisions, venue choices, endings and the playable Swallow Cut are authored game fiction. This is not a historical reconstruction or a claim that the branching events occurred.
+
+Sword motion: [Quaternius Universal Animation Library](https://quaternius.com/packs/universalanimationlibrary.html), CC0. Resampled/adapted hand and chest tracks; provenance and source hash retained in Assets/Resources/Animation/SOURCE.md, with original license beside it.

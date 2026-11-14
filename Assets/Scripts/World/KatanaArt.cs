@@ -44,7 +44,7 @@ namespace Ganryujima.World
             for (int i = 0; i < rim.Length; i++) { float a = i * Mathf.PI * 2 / 64; rim[i] = new Vector3(Mathf.Cos(a) * 0.068f, 0.15f, Mathf.Sin(a) * 0.053f); }
             ArenaBuilder.Tube("Tsuba rim", sword, assets, rim, 0.002f, 0.002f, bronze, 5);
             if (hands) Hand(sword, assets, new Vector3(0.035f, 0.04f, 0.008f), glove, sleeve, false, firstPerson);
-            Hand(sword, assets, new Vector3(-0.025f, -0.09f, 0.015f), glove, sleeve, true, firstPerson);
+            if (hands) Hand(sword, assets, new Vector3(-0.025f, -0.09f, 0.015f), glove, sleeve, true, firstPerson);
             return sword;
         }
 
