@@ -1,12 +1,10 @@
-using System.Threading.Tasks;
-
 namespace Ganryujima.Input.Face
 {
     public enum Gaze { left, center, right, unknown }
     public enum Wink { none, left, right }
 
     // Value snapshot: changing a returned copy cannot mutate provider state.
-    // Temporary C# port of shared contract; Dev A owns this folder at merge.
+    // Shared Dev A / Dev B contract. Preserve names, ranges, and frame semantics.
     public struct FaceState
     {
         public bool tracking;
@@ -25,12 +23,4 @@ namespace Ganryujima.Input.Face
         public double timestamp;     // milliseconds
     }
 
-    public interface IFaceInput
-    {
-        Task start();                // Must never throw; failure => tracking=false.
-        void stop();
-        Task calibrate(int durationMs = 5000);
-        void tick();                 // Once at start of each game frame.
-        FaceState getState();        // Cheap value snapshot.
-    }
 }

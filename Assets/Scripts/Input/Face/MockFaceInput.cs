@@ -4,21 +4,23 @@ using KeyInput = UnityEngine.Input;
 
 namespace Ganryujima.Input.Face
 {
-    /// <summary>Temporary keyboard provider. Never opens a webcam.</summary>
+    /// <summary>Dependency-free keyboard provider. Never opens a webcam.</summary>
     public sealed class MockFaceInput : IFaceInput
     {
         private bool active;
+        private int leanDirection;
         private FaceState state;
 
         public Task start()
         {
             active = true;
-            state = new FaceState { tracking = true, calibrated = true, composure = 0.95f, gaze = Gaze.center };
+            leanDirection = 0;
+            state = new FaceState { tracking = true, calibrated = true, composure = FaceConfig.MockCalmComposure, gaze = Gaze.center };
             return Task.CompletedTask;
         }
 
-        public void stop() { active = false; state = default; }
-        public Task calibrate(int durationMs = 5000)
+        public void stop() { active = false; leanDirection = 0; state = default; }
+        public Task calibrate(int durationMs = FaceConfig.CalibrationDurationMs)
         {
             state.calibrated = active;
             return Task.CompletedTask;
@@ -33,16 +35,18 @@ namespace Ganryujima.Input.Face
             if (!Application.isFocused)
             {
                 state.leanX = 0;
-                state.composure = 0.95f;
+                leanDirection = 0;
+                state.composure = FaceConfig.MockCalmComposure;
                 return;
             }
             state.leanX = (KeyInput.GetKey(KeyCode.E) ? 1 : 0) - (KeyInput.GetKey(KeyCode.Q) ? 1 : 0);
-            if (KeyInput.GetKeyDown(KeyCode.Q)) state.leanTrigger = -1;
-            if (KeyInput.GetKeyDown(KeyCode.E)) state.leanTrigger = 1;
+            int nextDirection = (int)state.leanX;
+            if (nextDirection != 0 && nextDirection != leanDirection) state.leanTrigger = nextDirection;
+            leanDirection = nextDirection;
             state.kiai = KeyInput.GetKeyDown(KeyCode.F);
             state.nod = KeyInput.GetKeyDown(KeyCode.Y);
             state.shake = KeyInput.GetKeyDown(KeyCode.N);
-            state.composure = KeyInput.GetKey(KeyCode.C) ? 0.15f : 0.95f;
+            state.composure = KeyInput.GetKey(KeyCode.C) ? FaceConfig.MockLowComposure : FaceConfig.MockCalmComposure;
             if (KeyInput.GetKeyDown(KeyCode.Z)) state.gaze = Gaze.left;
             if (KeyInput.GetKeyDown(KeyCode.X)) state.gaze = Gaze.center;
             if (KeyInput.GetKeyDown(KeyCode.V)) state.gaze = Gaze.right;

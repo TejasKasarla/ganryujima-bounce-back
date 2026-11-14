@@ -1,0 +1,82 @@
+using System;
+using System.Collections.Generic;
+using Ganryujima.Input.Face;
+using UnityEngine;
+
+internal static class ContractChecks
+{
+    private static int assertions;
+
+    private static void Main()
+    {
+        Check(typeof(FaceState).GetFields().Length == 14, "shared state keeps exactly fourteen fields");
+        IFaceInput face = FaceInputFactory.createFaceInput();
+        face.start().GetAwaiter().GetResult();
+        Check(face.getState().tracking && face.getState().calibrated, "mock starts ready");
+        var snapshot = face.getState();
+        snapshot.composure = 0;
+        Check(face.getState().composure > 0.9f, "snapshots cannot mutate provider");
+
+        Input.Set(KeyCode.Q, KeyCode.F, KeyCode.Y, KeyCode.N);
+        face.tick();
+        snapshot = face.getState();
+        Check(snapshot.leanX == -1 && snapshot.leanTrigger == -1, "Q leans left and pulses");
+        Check(snapshot.kiai && snapshot.nod && snapshot.shake, "F/Y/N fire events");
+        Input.NextFrame();
+        face.tick();
+        snapshot = face.getState();
+        Check(snapshot.leanX == -1 && snapshot.leanTrigger == 0, "held lean does not repeat");
+        Check(!snapshot.kiai && !snapshot.nod && !snapshot.shake, "pulses clear on next tick");
+        Input.Set(KeyCode.Q, KeyCode.E);
+        face.tick();
+        Check(face.getState().leanX == 0 && face.getState().leanTrigger == 0, "opposite lean keys cancel");
+        Input.Set(KeyCode.E, KeyCode.C, KeyCode.Z, KeyCode.G);
+        face.tick();
+        snapshot = face.getState();
+        Check(snapshot.leanTrigger == 1 && snapshot.composure == FaceConfig.MockLowComposure, "E and C work");
+        Check(snapshot.gaze == Gaze.left && snapshot.wink == Wink.left, "gaze and wink work");
+        Input.Set(KeyCode.X);
+        face.tick();
+        Check(face.getState().gaze == Gaze.center && face.getState().wink == Wink.left, "gaze centers; wink stays held");
+        Input.Set(KeyCode.V, KeyCode.G);
+        face.tick();
+        Check(face.getState().gaze == Gaze.right && face.getState().wink == Wink.none, "gaze right; wink toggles off");
+        Application.isFocused = false;
+        face.tick();
+        Check(face.getState().leanX == 0 && face.getState().leanTrigger == 0, "focus loss clears lean");
+        Application.isFocused = true;
+        face.stop();
+        face.tick();
+        Check(!face.getState().tracking, "stop leaves mock offline");
+        face.calibrate().GetAwaiter().GetResult();
+        Check(!face.getState().calibrated, "stopped provider cannot calibrate");
+        Console.WriteLine("PASS: " + assertions + " face contract checks");
+    }
+
+    internal static void Check(bool condition, string message)
+    {
+        assertions++;
+        if (!condition) throw new Exception("FAIL: " + message);
+    }
+}
+
+namespace UnityEngine
+{
+    public enum KeyCode { Q, E, F, Y, N, C, Z, X, V, G }
+    public static class Time { public static double realtimeSinceStartupAsDouble = 1; }
+    public static class Application { public static bool isFocused = true; }
+    public static class Input
+    {
+        private static readonly HashSet<KeyCode> held = new HashSet<KeyCode>();
+        private static readonly HashSet<KeyCode> pressed = new HashSet<KeyCode>();
+        public static bool GetKey(KeyCode key) => held.Contains(key);
+        public static bool GetKeyDown(KeyCode key) => pressed.Contains(key);
+        public static void Set(params KeyCode[] keys)
+        {
+            held.Clear();
+            pressed.Clear();
+            foreach (KeyCode key in keys) { held.Add(key); pressed.Add(key); }
+        }
+        public static void NextFrame() => pressed.Clear();
+    }
+}
