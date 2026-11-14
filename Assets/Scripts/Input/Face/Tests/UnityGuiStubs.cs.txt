@@ -1,0 +1,55 @@
+using System;
+
+namespace UnityEngine
+{
+    public class Object
+    {
+        public static T FindFirstObjectByType<T>() where T : class => null;
+        public static void DontDestroyOnLoad(Object value) { }
+        public static void Destroy(Object value) { }
+    }
+    public class MonoBehaviour : Object { }
+    public class GameObject : Object
+    {
+        public GameObject(string name) { }
+        public T AddComponent<T>() where T : new() => new T();
+    }
+    public sealed class DefaultExecutionOrder : Attribute { public DefaultExecutionOrder(int order) { } }
+    public enum RuntimeInitializeLoadType { AfterSceneLoad }
+    public sealed class RuntimeInitializeOnLoadMethodAttribute : Attribute { public RuntimeInitializeOnLoadMethodAttribute(RuntimeInitializeLoadType type) { } }
+    public enum TextureFormat { RGB24 }
+    public class Texture2D : Object
+    {
+        public static Texture2D whiteTexture => null;
+        public Texture2D(int width, int height, TextureFormat format, bool mipmaps) { }
+    }
+    public static class ImageConversion { public static bool LoadImage(Texture2D texture, byte[] bytes, bool nonReadable) => true; }
+    public enum TextAnchor { MiddleCenter }
+    public class GUIStyle
+    {
+        public int fontSize;
+        public bool wordWrap;
+        public TextAnchor alignment;
+        public GUIStyle(GUIStyle source) { }
+    }
+    public class GUISkin { public GUIStyle label; }
+    public class GUIContent { public static GUIContent none => null; }
+    public struct Rect
+    {
+        public float x, y, width, height;
+        public Rect(float x, float y, float width, float height) { this.x = x; this.y = y; this.width = width; this.height = height; }
+    }
+    public struct Color { public Color(float red, float green, float blue, float alpha = 1) { } }
+    public static class Screen { public static int width = 1280, height = 720; }
+    public static class GUI
+    {
+        public static Color color;
+        public static bool enabled = true;
+        public static GUISkin skin = new GUISkin();
+        public static void Box(Rect position, GUIContent content) { }
+        public static void Label(Rect position, string text, GUIStyle style) { }
+        public static bool Button(Rect position, string text) => false;
+        public static void DrawTexture(Rect position, Texture2D texture) { }
+        public static void DrawTextureWithTexCoords(Rect position, Texture2D texture, Rect coordinates) { }
+    }
+}

@@ -1,0 +1,53 @@
+:root {
+  color-scheme: light;
+  --paper: #f5f6f3;
+  --ink: #202523;
+  --muted: #64716c;
+  --line: #d3d9d4;
+  --red: #b42c33;
+  --green: #27705b;
+  font-family: "Trebuchet MS", Verdana, sans-serif;
+  color: var(--ink);
+  background: var(--paper);
+  letter-spacing: 0;
+}
+* { box-sizing: border-box; }
+body { margin: 0; min-width: 280px; background-image: linear-gradient(#20252303 1px, transparent 1px); background-size: 100% 6px; }
+header, main, footer { padding-inline: max(20px, calc((100% - 1180px) / 2)); }
+header { display: flex; justify-content: space-between; align-items: center; gap: 20px; padding-block: 24px; border-bottom: 1px solid var(--line); }
+.eyebrow { color: var(--red); margin: 0 0 6px; font-size: 11px; font-weight: bold; }
+h1 { margin: 0; font: 38px/1.1 Georgia, serif; }
+h2 { font-size: 16px; margin: 0 0 14px; }
+nav { display: flex; flex-wrap: wrap; gap: 8px; }
+button { font: inherit; font-size: 13px; padding: 10px 14px; border: 1px solid var(--ink); border-radius: 4px; background: transparent; color: var(--ink); cursor: pointer; min-height: 40px; }
+button:first-child { background: var(--ink); color: white; }
+button:disabled { opacity: 0.4; cursor: default; }
+button:focus-visible { outline: 3px solid var(--green); outline-offset: 3px; }
+.status-strip { display: flex; flex-wrap: wrap; align-items: center; gap: 18px; min-height: 58px; font-size: 12px; color: var(--muted); }
+#status { margin-right: auto; color: var(--green); font-weight: bold; }
+.workspace { display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(230px, 1fr); gap: 30px; padding-bottom: 24px; }
+.capture, .readout { min-width: 0; }
+.camera-view { position: relative; aspect-ratio: 4 / 3; background: #171d1a; overflow: hidden; }
+video, canvas { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; transform: scaleX(-1); }
+#camera-state { position: absolute; bottom: 12px; left: 12px; padding: 5px 8px; background: #171d1add; color: white; font: 11px monospace; }
+#countdown { position: absolute; inset: 0; place-content: center; text-align: center; color: white; background: #171d1a70; font: 52px Georgia, serif; }
+#countdown:not([hidden]) { display: grid; }
+.events { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); margin-top: 12px; }
+.events output { display: grid; place-items: center; height: 46px; background: var(--paper); color: var(--muted); font: bold 12px "Trebuchet MS", sans-serif; transition: background-color 100ms, color 100ms; }
+.events output.fired { color: white; background: var(--red); }
+#calibration-status { font-size: 13px; color: var(--muted); }
+#error { color: var(--red); overflow-wrap: anywhere; font-size: 13px; }
+table { border-collapse: collapse; width: 100%; table-layout: fixed; font: 13px/1.25 Consolas, monospace; }
+td { padding: 8px 0; border-top: 1px solid var(--line); overflow-wrap: anywhere; }
+td:first-child { width: 58%; color: var(--muted); }
+td:last-child { text-align: right; font-variant-numeric: tabular-nums; }
+footer { display: flex; justify-content: space-between; gap: 12px; border-top: 1px solid var(--line); padding-block: 16px; color: var(--muted); font-size: 10px; }
+@media (max-width: 720px) {
+  header { align-items: flex-start; flex-direction: column; padding-block: 18px; }
+  h1 { font-size: 32px; }
+  .workspace { grid-template-columns: minmax(0, 1fr); gap: 24px; }
+  .status-strip { gap: 10px; }
+  nav { width: 100%; }
+  button { flex: 1; padding-inline: 8px; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }

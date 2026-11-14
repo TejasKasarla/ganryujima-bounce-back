@@ -1,0 +1,5 @@
+Web/vendor/
+Models/*.task
+Tests/bin/
+Tests/obj/
+*.log

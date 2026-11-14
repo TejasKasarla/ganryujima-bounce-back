@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="face-token" content="__FACE_TOKEN__">
+    <title>Ganryujima | Face Input</title>
+    <link rel="stylesheet" href="/face/face-test.css">
+    <script type="module" src="/face/face-ui.mjs"></script>
+  </head>
+  <body>
+    <header>
+      <div><p class="eyebrow">GANRYUJIMA / DEV A</p><h1>Face Input</h1></div>
+      <nav aria-label="Camera controls">
+        <button id="start" type="button">Start camera</button>
+        <button id="stop" type="button" disabled>Stop</button>
+        <button id="calibrate" type="button" disabled>Calibrate</button>
+      </nav>
+    </header>
+    <main>
+      <div class="status-strip" aria-live="polite">
+        <span id="status">Camera off</span>
+        <span id="delegate">No delegate</span>
+        <span id="fps">0 Hz</span>
+      </div>
+      <div class="workspace">
+        <section class="capture" aria-label="Webcam and landmarks">
+          <div class="camera-view">
+            <video id="video" muted playsinline aria-label="Mirrored webcam preview"></video>
+            <canvas id="landmarks" width="640" height="480" aria-label="Face landmarks"></canvas>
+            <output id="countdown" hidden aria-live="polite"></output>
+            <span id="camera-state">OFFLINE</span>
+          </div>
+          <div class="events" aria-label="Face events">
+            <output id="event-lean">LEAN</output>
+            <output id="event-kiai">KIAI</output>
+            <output id="event-nod">NOD</output>
+            <output id="event-shake">SHAKE</output>
+          </div>
+          <p id="calibration-status" role="status">Not calibrated</p>
+          <p id="error" role="alert" hidden></p>
+        </section>
+        <section class="readout" aria-label="FaceState values">
+          <h2>Live State</h2>
+          <table><tbody id="fields"></tbody></table>
+        </section>
+      </div>
+    </main>
+    <footer><span>LOCAL FACE TRACKER</span><span id="connection">Connecting</span></footer>
+  </body>
+</html>

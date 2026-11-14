@@ -1,0 +1,123 @@
+using System;
+using Ganryujima.Input.Face;
+using static ContractChecks;
+
+internal static class SignalChecks
+{
+    private static double now;
+    private static FaceSignalProcessor processor;
+
+    internal static void Run()
+    {
+        processor = new FaceSignalProcessor();
+        now = 0;
+        processor.BeginCalibration(now);
+        for (int frame = 0; frame < 151; frame++) Step(new FaceSample { tracking = true, headYaw = 4, jawOpen = 0.2f });
+        Check(processor.State.calibrated, "five seconds of neutral samples calibrate");
+        Check(processor.JawThreshold >= 0.4f, "resting jaw changes personal threshold");
+        Step(new FaceSample { tracking = true, headYaw = 4, jawOpen = 0.2f });
+        Check(Math.Abs(processor.State.headYaw) < 0.01f, "neutral pose is subtracted");
+        Check(processor.State.composure > 0.99f, "resting shapes remain calm");
+
+        var shout = new FaceSample { tracking = true, headYaw = 4, jawOpen = 0.9f };
+        for (int frame = 0; frame < 4; frame++) { Step(shout); Check(!processor.State.kiai, "short jaw opening cannot kiai"); }
+        Step(shout);
+        Check(processor.State.kiai, "held jaw emits kiai after 120ms");
+        for (int frame = 0; frame < 35; frame++) { Step(shout); Check(!processor.State.kiai, "held jaw cannot repeat kiai"); }
+        Check(processor.State.composure < 0.8f, "mouth activity reduces composure");
+
+        var blink = new FaceSample { tracking = true, eyeBlinkLeft = 0.95f, eyeBlinkRight = 0.95f };
+        for (int frame = 0; frame < 12; frame++) Step(blink);
+        Check(processor.State.wink == Wink.none && processor.State.gaze == Gaze.unknown, "both eyes closed are not a wink or gaze");
+        var wink = new FaceSample { tracking = true, eyeBlinkLeft = 0.95f };
+        for (int frame = 0; frame < 5; frame++) Step(wink);
+        Check(processor.State.wink == Wink.none, "natural unilateral blink is filtered");
+        for (int frame = 0; frame < 4; frame++) Step(wink);
+        Check(processor.State.wink == Wink.left, "deliberate left wink holds after 250ms");
+        Step(new FaceSample { tracking = true });
+        Check(processor.State.wink == Wink.none, "opening eye clears wink");
+
+        var look = new FaceSample { tracking = true, eyeLookOutLeft = 0.8f, eyeLookInRight = 0.8f };
+        for (int frame = 0; frame < 5; frame++) Step(look);
+        Check(processor.State.gaze == Gaze.left, "eyeLook blendshapes give left gaze");
+        for (int frame = 0; frame < 5; frame++) Step(new FaceSample { tracking = true });
+        Check(processor.State.gaze == Gaze.center, "neutral eyes give center gaze");
+        for (int frame = 0; frame < 5; frame++) Step(new FaceSample { tracking = true, eyeLookInLeft = 0.8f, eyeLookOutRight = 0.8f });
+        Check(processor.State.gaze == Gaze.right, "eyeLook blendshapes give right gaze");
+
+        bool leaned = false;
+        var lean = new FaceSample { tracking = true, headRoll = 30, lateralOffset = 0.3f };
+        for (int frame = 0; frame < 20; frame++) { Step(lean); leaned |= processor.State.leanTrigger == 1; }
+        Check(leaned && processor.State.leanX > 0.8f && processor.State.leanX <= 1, "combined smoothed pose and offset trigger right lean");
+        Step(lean);
+        Check(processor.State.leanTrigger == 0, "held lean does not repeat");
+        float heldLean = processor.State.leanX;
+        now += 250;
+        processor.BeginFrame(now);
+        processor.EndFrame(now);
+        Check(processor.State.tracking && processor.State.leanX == heldLean, "loss holds last state for 300ms");
+        now += 100;
+        processor.BeginFrame(now);
+        processor.EndFrame(now);
+        Check(!processor.State.tracking && processor.State.leanX < heldLean, "loss decays after 300ms");
+        now += 3000;
+        processor.BeginFrame(now);
+        processor.EndFrame(now);
+        Check(Math.Abs(processor.State.leanX) < 0.01f && processor.State.composure > 0.99f, "long loss approaches neutral");
+        Step(new FaceSample { tracking = true, jawOpen = float.NaN });
+        Check(!processor.State.tracking && !float.IsNaN(processor.State.leanX), "non-finite sample cannot poison state");
+
+        processor = new FaceSignalProcessor();
+        processor.BeginCalibration(now, 5000);
+        now += 5001;
+        processor.BeginFrame(now);
+        processor.EndFrame(now);
+        Check(!processor.State.calibrated && !processor.IsCalibrating, "no-face calibration finishes without false success");
+
+        Calibrate();
+        bool nodded = Gesture(true);
+        Check(nodded, "pitch oscillation and return emit nod");
+        for (int frame = 0; frame < 40; frame++) Step(new FaceSample { tracking = true });
+        bool shook = Gesture(false);
+        Check(shook, "yaw oscillation and return emit shake");
+        processor.BeginFrame(now + 1);
+        processor.EndFrame(now + 1);
+        Check(!processor.State.nod && !processor.State.shake, "gesture pulses clear on next game frame");
+
+        processor = new FaceSignalProcessor();
+        processor.BeginCalibration(1000, 5000);
+        processor.BeginFrame(1000);
+        for (int frame = 0; frame < 60; frame++) processor.Process(new FaceSample { tracking = true, headYaw = 90 }, frame * 10);
+        processor.EndFrame(6001);
+        Check(!processor.State.calibrated, "samples predating calibration cannot satisfy its coverage");
+    }
+
+    private static void Calibrate()
+    {
+        processor = new FaceSignalProcessor();
+        processor.BeginCalibration(now);
+        for (int frame = 0; frame < 151; frame++) Step(new FaceSample { tracking = true });
+    }
+
+    private static bool Gesture(bool pitch)
+    {
+        bool fired = false;
+        foreach (float position in new[] { 22f, -22f, 0f })
+        {
+            for (int frame = 0; frame < 8; frame++)
+            {
+                Step(new FaceSample { tracking = true, headPitch = pitch ? position : 0, headYaw = pitch ? 0 : position });
+                fired |= pitch ? processor.State.nod : processor.State.shake;
+            }
+        }
+        return fired;
+    }
+
+    private static void Step(FaceSample sample)
+    {
+        now += 1000.0 / FaceConfig.DetectionHz;
+        processor.BeginFrame(now);
+        processor.Process(sample, now);
+        processor.EndFrame(now);
+    }
+}

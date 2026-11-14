@@ -1,0 +1,80 @@
+using System;
+using System.IO;
+using System.Net;
+using System.Net.Http;
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
+using Ganryujima.Input.Face;
+using static ContractChecks;
+
+internal static class BridgeChecks
+{
+    internal static async Task Run()
+    {
+        var face = new FaceInput(Path.GetTempPath(), "missing-test-page", 18765, false);
+        await face.start();
+        Check(face.IsRunning, "local bridge starts without camera");
+        try
+        {
+            using (var client = new HttpClient())
+            {
+                client.BaseAddress = new Uri(face.Address);
+                var response = await client.GetAsync("state");
+                Check(response.StatusCode == HttpStatusCode.Forbidden, "state rejects missing session token");
+                client.DefaultRequestHeaders.Add("X-Face-Token", face.Token);
+                response = await client.GetAsync("state");
+                Check(response.IsSuccessStatusCode, "authenticated state is available");
+                Check((await response.Content.ReadAsStringAsync()).Contains("\"events\""), "diagnostic event counters survive polling gaps");
+                response = await client.GetAsync("face/config.js");
+                string config = await response.Content.ReadAsStringAsync();
+                Check(config.Contains("requestTimeoutMs") && config.Contains("modelLoadTimeoutMs") && config.Contains("eventFlashMs"), "browser timing comes from FaceConfig");
+                response = await client.PostAsync("status", Json("{\"ready\":true}"));
+                Check(response.IsSuccessStatusCode && face.IsReady, "camera handshake marks provider ready");
+                response = await client.PostAsync("sample", Json("{\"tracking\":true,\"headRoll\":20}"));
+                face.tick();
+                Check(response.IsSuccessStatusCode && face.getState().tracking, "sample crosses HTTP bridge into processor");
+                response = await client.PostAsync("sample", Json("{\"tracking\":true,\"jawOpen\":4}"));
+                Check(response.StatusCode == HttpStatusCode.BadRequest, "invalid shape range is rejected");
+                response = await client.PostAsync("sample", Json("{"));
+                Check(response.StatusCode == HttpStatusCode.BadRequest, "malformed JSON cannot crash server");
+                client.DefaultRequestHeaders.Add("Origin", "https://untrusted.invalid");
+                response = await client.PostAsync("calibrate", Json("{}"));
+                Check(response.StatusCode == HttpStatusCode.Forbidden, "cross-origin writes are blocked");
+                client.DefaultRequestHeaders.Remove("Origin");
+                response = await client.PostAsync("status", Json("{\"ready\":false,\"error\":\"Permission denied\"}"));
+                Check(response.IsSuccessStatusCode && face.HasFailed && !face.IsReady, "camera denial enables fallback");
+            }
+        }
+        finally { face.stop(); }
+        Check(!face.getState().tracking && !face.IsRunning, "stop releases bridge and tracking");
+        await face.start();
+        Check(face.IsRunning, "provider can restart after stop");
+        Task calibration = face.calibrate();
+        face.stop();
+        Check(calibration.IsCompleted, "stop resolves pending calibration");
+        IFaceInput mock = FaceInputFactory.createFaceInput(true);
+        Check(mock is MockFaceInput, "debug flag selects mock");
+        IFaceInput real = FaceInputFactory.createFaceInput(false);
+        Check(real is FallbackFaceInput, "camera mode selects resilient real provider");
+        real.stop();
+    }
+
+    internal static async Task Serve(string project)
+    {
+        var face = new FaceInput(Path.Combine(project, "Assets", "Scripts", "Input", "Face"), Path.Combine(project, "public", "face-test.html"), FaceConfig.BridgePort, false);
+        await face.start();
+        if (!face.IsRunning) throw new Exception(face.Error);
+        Console.WriteLine("Face test server: " + face.Address);
+        using (var cancelled = new CancellationTokenSource())
+        using (var timer = new PeriodicTimer(TimeSpan.FromMilliseconds(1000.0 / 60)))
+        {
+            Console.CancelKeyPress += (_, cancel) => { cancel.Cancel = true; cancelled.Cancel(); };
+            try { while (await timer.WaitForNextTickAsync(cancelled.Token)) face.tick(); }
+            catch (OperationCanceledException) { }
+        }
+        face.stop();
+    }
+
+    private static StringContent Json(string text) => new StringContent(text, Encoding.UTF8, "application/json");
+}

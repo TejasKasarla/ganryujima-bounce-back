@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using Ganryujima.Input.Face;
 using UnityEngine;
 
@@ -7,9 +8,11 @@ internal static class ContractChecks
 {
     private static int assertions;
 
-    private static void Main()
+    private static async Task Main(string[] args)
     {
+        if (args.Length > 0 && args[0] == "--serve") { await BridgeChecks.Serve(args[1]); return; }
         Check(typeof(FaceState).GetFields().Length == 14, "shared state keeps exactly fourteen fields");
+        Check(typeof(FaceInputFactory).GetMethod("createFaceInput", Type.EmptyTypes) != null, "factory retains the zero-argument shared entry point");
         IFaceInput face = FaceInputFactory.createFaceInput();
         face.start().GetAwaiter().GetResult();
         Check(face.getState().tracking && face.getState().calibrated, "mock starts ready");
@@ -50,7 +53,9 @@ internal static class ContractChecks
         Check(!face.getState().tracking, "stop leaves mock offline");
         face.calibrate().GetAwaiter().GetResult();
         Check(!face.getState().calibrated, "stopped provider cannot calibrate");
-        Console.WriteLine("PASS: " + assertions + " face contract checks");
+        SignalChecks.Run();
+        await BridgeChecks.Run();
+        Console.WriteLine("PASS: " + assertions + " face contract and signal checks");
     }
 
     internal static void Check(bool condition, string message)
@@ -62,9 +67,21 @@ internal static class ContractChecks
 
 namespace UnityEngine
 {
-    public enum KeyCode { Q, E, F, Y, N, C, Z, X, V, G }
+    public enum KeyCode { Q, E, F, Y, N, C, Z, X, V, G, F1 }
     public static class Time { public static double realtimeSinceStartupAsDouble = 1; }
-    public static class Application { public static bool isFocused = true; }
+    public static class Application
+    {
+        public static bool isFocused = true;
+        public static bool isEditor = true;
+        public static string dataPath = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "Assets");
+        public static void OpenURL(string address) { }
+    }
+    public static class JsonUtility
+    {
+        private static readonly System.Text.Json.JsonSerializerOptions options = new System.Text.Json.JsonSerializerOptions { IncludeFields = true };
+        public static string ToJson(object value) => System.Text.Json.JsonSerializer.Serialize(value, options);
+        public static T FromJson<T>(string text) => System.Text.Json.JsonSerializer.Deserialize<T>(text, options);
+    }
     public static class Input
     {
         private static readonly HashSet<KeyCode> held = new HashSet<KeyCode>();
@@ -79,4 +96,9 @@ namespace UnityEngine
         }
         public static void NextFrame() => pressed.Clear();
     }
+}
+
+namespace Ganryujima.Core
+{
+    public static class GameConfig { public const bool DEBUG_INPUT = true; }
 }

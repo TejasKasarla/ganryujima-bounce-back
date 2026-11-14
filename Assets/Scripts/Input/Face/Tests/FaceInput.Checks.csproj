@@ -12,6 +12,12 @@
     <Compile Include="../FaceConfig.cs" />
     <Compile Include="../MockFaceInput.cs" />
     <Compile Include="../FaceInputFactory.cs" />
+    <Compile Include="../FaceSample.cs" />
+    <Compile Include="../FaceSignalProcessor.cs" />
+    <Compile Include="../FaceInput.cs" />
+    <Compile Include="../FaceBridgeServer.cs" />
+    <Compile Include="../FallbackFaceInput.cs" />
+    <Compile Include="../WebcamPreview.cs" />
     <Compile Include="*.cs.txt" />
   </ItemGroup>
 </Project>
