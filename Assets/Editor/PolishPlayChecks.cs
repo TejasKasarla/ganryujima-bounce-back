@@ -43,12 +43,28 @@ namespace Ganryujima.Editor
             string output = Environment.GetEnvironmentVariable("GANRYUJIMA_CAPTURE_DIR") ?? Path.GetFullPath("work/polish-captures"); Directory.CreateDirectory(output);
             Assert(game.Audio.HasLicensedClips, "Licensed atmosphere/clash clips missing");
             Assert(game.Audio.HasBattleMusic, "CC0 battle soundtrack missing");
+            var battleSource = GameObject.Find("CC0 live taiko battle loop").GetComponent<AudioSource>();
+            var samples = new float[battleSource.clip.samples * battleSource.clip.channels];
+            Assert(battleSource.clip.GetData(samples, 0), "Battle PCM cannot be read");
+            float peak = 0; foreach (float sample in samples) peak = Mathf.Max(peak, Mathf.Abs(sample));
+            Debug.Log($"BATTLE AUDIO DIAGNOSTICS: playing={battleSource.isPlaying}, load={battleSource.clip.loadState}, peak={peak}, volume={battleSource.volume}, master={AudioListener.volume}, music={GameSettings.Music}, paused={AudioListener.pause}");
+            Assert(peak > .01f, "Battle music was baked as silence");
             var particles = UnityEngine.Object.FindFirstObjectByType<ArenaParticles>(); Assert(particles != null && particles.Capacity == 72, "Particle pool missing or unbounded");
             game.BeginJourney(); game.SetPaused(true);
             float age = game.Story.Age; int frames = game.FramesTicked;
             await Task.Delay(160);
             Assert(game.Paused && AudioListener.pause && game.Story.Age == age && game.FramesTicked > frames, "Story pause or live face loop failed");
             game.SetPaused(false); ContentChecks.AdvanceScenes(game.Story); game.Story.Choose(0); ContentChecks.AdvanceScenes(game.Story);
+            game.SetPaused(false);
+            // An active encounter must be audible even with the cursor released / player standing still.
+            game.Audio.Tick(1, false, Vector3.zero, game.Opponent, false);
+            Assert(battleSource.volume > 0 && battleSource.isPlaying, "Duel music is silent without cursor capture");
+            battleSource.Stop(); game.Audio.Tick(.02f, false, Vector3.zero, game.Opponent, false);
+            Assert(battleSource.isPlaying, "Stopped fight source did not recover");
+            int audioSample = battleSource.timeSamples;
+            await Task.Delay(200);
+            Assert(battleSource.timeSamples != audioSample, "Fight music playback cursor did not advance");
+            Debug.Log($"BATTLE PLAYBACK PASS: source playing, volume={battleSource.volume}, samples advancing without cursor capture; stopped source recovers.");
             game.SetPaused(true); age = game.Opponent.StateAge;
             game.Combat.BeginGuard(); game.Combat.EndGuard(); float health = game.Combat.Health, stamina = game.Combat.Stamina;
             await Task.Delay(160);
