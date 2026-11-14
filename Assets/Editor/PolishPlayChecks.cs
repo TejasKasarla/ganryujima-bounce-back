@@ -42,6 +42,7 @@ namespace Ganryujima.Editor
             void Assert(bool value, string message) { if (!value) throw new Exception(message); }
             string output = Environment.GetEnvironmentVariable("GANRYUJIMA_CAPTURE_DIR") ?? Path.GetFullPath("work/polish-captures"); Directory.CreateDirectory(output);
             Assert(game.Audio.HasLicensedClips, "Licensed atmosphere/clash clips missing");
+            Assert(game.Audio.HasBattleMusic, "CC0 battle soundtrack missing");
             var particles = UnityEngine.Object.FindFirstObjectByType<ArenaParticles>(); Assert(particles != null && particles.Capacity == 72, "Particle pool missing or unbounded");
             game.BeginJourney(); game.SetPaused(true);
             float age = game.Story.Age; int frames = game.FramesTicked;

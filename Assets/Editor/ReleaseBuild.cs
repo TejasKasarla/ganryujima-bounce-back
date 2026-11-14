@@ -32,7 +32,7 @@ namespace Ganryujima.Editor
                 "GANRYUJIMA: BOUNCE BACK\r\n\r\nRun Ganryujima.exe for keyboard/mouse play.\r\nRun Play with webcam.cmd for the local companion face tracker; start its camera, allow permission and calibrate. F1 shows the preview.\r\n\r\nWASD move; mouse look/stance; LMB strike (hold for heavy); RMB guard/parry; 1-4 stance.\r\nQ/E dodge, F kiai, Space retreat/advance, 1-3 story choices, Y/N binary, Esc pause/settings, R restart duel.\r\nMeditation: relax your face for five seconds; in keyboard mode release C to be calm.\r\n\r\nKeep this whole folder together, including Ganryujima_Data and GanryujimaFace.\r\nSee CREDITS.md for third-party assets. The start screen remains Dev A's pending integration.\r\n");
             File.Copy("README.md", Path.Combine(output, "PROJECT README.md"), true);
             File.Copy("CREDITS.md", Path.Combine(output, "CREDITS.md"), true);
-            foreach (string directory in new[] { "Documentation/Licenses", "Assets/Art/Samurai", "Assets/Resources/Art/Coast", "Assets/Resources/Audio/Finisher", "Assets/Resources/Audio/Meditation", "Assets/Resources/Audio/Atmosphere" })
+            foreach (string directory in new[] { "Documentation/Licenses", "Assets/Art/Samurai", "Assets/Resources/Art/Coast", "Assets/Resources/Audio/Finisher", "Assets/Resources/Audio/Meditation", "Assets/Resources/Audio/Atmosphere", "Assets/Resources/Audio/Battle" })
             {
                 string creditFolder = Path.Combine(output, "Credits", directory.Replace('/', Path.DirectorySeparatorChar));
                 Directory.CreateDirectory(creditFolder);

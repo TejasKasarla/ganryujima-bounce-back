@@ -11,7 +11,7 @@ namespace Ganryujima.World
         private readonly GameObject root;
         private readonly GeneratedResources owner;
         private readonly CombatModel combat;
-        private readonly AudioSource wind, sea, effects, music, feet;
+        private readonly AudioSource wind, sea, effects, music, feet, battle;
         private readonly AudioClip clash, slash, taiko, flute, kiai, step, thud;
         private readonly System.Random random = new System.Random(1712);
         private float seaMix, seaTarget, noteTimer = 7, stepDistance, drumCooldown;
@@ -20,6 +20,7 @@ namespace Ganryujima.World
         private OpponentState lastState;
         public bool HasLicensedClips => wind.clip != null && sea.clip != null && clash != null;
         public float SeaMix => seaMix;
+        public bool HasBattleMusic => battle.clip != null;
 
         public GameAudio(Transform parent, CombatModel model)
         {
@@ -27,6 +28,9 @@ namespace Ganryujima.World
             root = new GameObject("Soundscape / wind, sea, steel and breath"); root.transform.SetParent(parent, false);
             owner = root.AddComponent<GeneratedResources>();
             wind = Source("Wind"); sea = Source("Sea"); effects = Source("Combat cues"); music = Source("Taiko and flute"); feet = Source("Footwork");
+            battle = Source("CC0 live taiko battle loop"); battle.volume = 0; battle.loop = true;
+            battle.clip = MakeLoop(Resources.Load<AudioClip>("Audio/Battle/TaikoBattle"));
+            if (battle.clip != null) battle.Play();
             wind.clip = MakeLoop(Resources.Load<AudioClip>("Audio/Atmosphere/Wind"));
             sea.clip = MakeLoop(Resources.Load<AudioClip>("Audio/Atmosphere/Ocean"));
             wind.loop = sea.loop = true; wind.volume = sea.volume = 0;
@@ -92,6 +96,7 @@ namespace Ganryujima.World
             seaTarget = arena.StartsWith("beach", StringComparison.Ordinal) ? 1 : .08f;
             noteTimer = kind == "ending" ? 1 : kind == "meditation" ? 5 : 10;
             if (kind == "duel") { music.pitch = .85f; music.PlayOneShot(taiko, GameSettings.Music * .55f); }
+            if (kind == "duel" && battle.clip != null) battle.time = 0;
             havePosition = false; stepDistance = 0;
         }
         public void Tick(float dt, bool walking, Vector3 position, ArimaOpponent opponent, bool narrative)
@@ -99,6 +104,7 @@ namespace Ganryujima.World
             seaMix = Mathf.MoveTowards(seaMix, seaTarget, dt * .28f);
             wind.volume = GameSettings.Ambience * .45f;
             sea.volume = GameSettings.Ambience * seaMix * .8f;
+            battle.volume = Mathf.MoveTowards(battle.volume, walking ? GameSettings.Music * .62f : 0, dt * .65f);
             music.volume = 1; effects.volume = feet.volume = 1;
             noteTimer -= dt; drumCooldown = Mathf.Max(0, drumCooldown - dt);
             if (narrative && noteTimer <= 0)
