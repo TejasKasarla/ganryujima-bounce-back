@@ -18,6 +18,7 @@ namespace Ganryujima.Combat
         public float StaminaLimit { get; private set; }
         public int Wounds { get; private set; }
         public float TargetHealth { get; private set; }
+        public float TargetHealthLimit { get; private set; }
         public Stance Stance { get; set; }
         public Stance AttackStance { get; private set; }
         public bool Guarding { get; private set; }
@@ -50,9 +51,10 @@ namespace Ganryujima.Combat
 
         public CombatModel() { Reset(); }
 
-        public void Reset(int wounds = 0)
+        public void Reset(int wounds = 0,float targetHealth = GameConfig.MaximumHealth)
         {
-            Health = TargetHealth = GameConfig.MaximumHealth;
+            Health = GameConfig.MaximumHealth;
+            TargetHealth = TargetHealthLimit = Mathf.Max(1,targetHealth);
             Wounds=Mathf.Clamp(wounds,0,GameConfig.MaximumWounds);
             StaminaLimit=GameConfig.MaximumStamina-Wounds*GameConfig.WoundStaminaPenalty;
             Stamina = StaminaLimit;
@@ -181,7 +183,7 @@ namespace Ganryujima.Combat
                 if (distance <= reach && aimAngle <= GameConfig.HitAngle)
                 {
                     var response = ResolveTargetStrike?.Invoke(Heavy, AttackStance) ?? TargetResponse.Hit;
-                    if (response == TargetResponse.Block) Emit(Impact.TargetBlock, "ARIMA GUARDS — change zone or use a heavy cut.");
+                    if (response == TargetResponse.Block) Emit(Impact.TargetBlock, "OPPONENT GUARDS — change zone or use a heavy cut.");
                     else
                     {
                         float multiplier = response == TargetResponse.Counter ? GameConfig.CounterDamageMultiplier : 1;

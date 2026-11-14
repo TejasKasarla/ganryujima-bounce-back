@@ -4,7 +4,8 @@ using Ganryujima.Core;
 
 namespace Ganryujima.Combat
 {
-    public enum OpponentState { Idle, Circle, Windup, Feint, Strike, Recover, Guard, Recoil, Counter, Staggered, Yield, Victory }
+    public enum OpponentState { Idle, Circle, Windup, Feint, Strike, Recover, Guard, Recoil, Counter, Staggered, Yield, Victory, SwallowTurn }
+    public enum OpponentId { Arima, Yoshioka, Kojiro }
 
     /// <summary>Deterministic tutorial FSM. Movement and strike timing share combat's local clock.</summary>
     public sealed class ArimaOpponent : IDisposable
@@ -14,17 +15,28 @@ namespace Ganryujima.Combat
         private float staggerDuration = GameConfig.ArimaStagger;
         private int cycle;
         private bool struck, feint;
+        private bool swallow,returnCut;
+        public OpponentId Id { get; private set; }
+        public string Name => Id==OpponentId.Kojiro?"Sasaki Kojiro":Id==OpponentId.Yoshioka?"Yoshioka Denshichiro":"Arima Kihei";
+        public float MaximumHealth => Id==OpponentId.Kojiro?GameConfig.KojiroHealth:GameConfig.MaximumHealth;
+        public float Reach => Id==OpponentId.Kojiro?GameConfig.KojiroReach:GameConfig.ArimaReach;
+        public float WindupDuration => Id==OpponentId.Arima?GameConfig.ArimaWindup:Id==OpponentId.Yoshioka?GameConfig.YoshiokaWindup:GameConfig.KojiroWindup;
+        private float Speed => Id==OpponentId.Arima?GameConfig.ArimaSpeed:Id==OpponentId.Yoshioka?GameConfig.YoshiokaSpeed:GameConfig.KojiroSpeed;
+        private float CounterDuration => Id==OpponentId.Kojiro?GameConfig.KojiroCounter:GameConfig.ArimaCounter;
+        public bool SwallowCut => swallow && (Telling || State==OpponentState.Strike);
+        public bool RisingCut => returnCut;
         public OpponentState State { get; private set; }
         public Vector2 Position { get; private set; }
         public Vector2 Forward { get; private set; }
         public Stance Zone { get; private set; }
-        public bool Telling => State == OpponentState.Windup;
+        public bool Telling => State == OpponentState.Windup || State==OpponentState.SwallowTurn;
         public bool CounterOpen => State == OpponentState.Counter;
-        public float TellProgress => Telling ? Mathf.Clamp01(age / GameConfig.ArimaWindup) : 0;
+        public float TellProgress => Telling ? Mathf.Clamp01(age / (State==OpponentState.SwallowTurn?GameConfig.SwallowTurnTime:WindupDuration)) : 0;
         public float StateAge => age;
-        public float CounterRemaining => CounterOpen ? Mathf.Max(0, GameConfig.ArimaCounter - age) : 0;
+        public float CounterRemaining => CounterOpen ? Mathf.Max(0, CounterDuration - age) : 0;
 
-        public string ReadTell(bool focused) => focused && Telling ? (feint ? "FEINT — wait for the second tell" : "COMMITTED CUT") : null;
+        public string ReadTell(bool focused) => focused && Telling ? (feint ? "FEINT — wait for the second tell" : SwallowCut ? (returnCut?"SWALLOW CUT — rising return":"SWALLOW CUT — low sweep, then rising return") : "COMMITTED CUT") : null;
+        public void Configure(OpponentId id) { Id=id; Reset(); }
         public bool ReceiveKiai(float distance, float angle)
         {
             if (combat.Over || distance > GameConfig.KiaiRange || angle > GameConfig.KiaiAngle) return false;
@@ -46,6 +58,7 @@ namespace Ganryujima.Combat
         {
             Position = new Vector2(0, 2); Forward = Vector2.down;
             cycle = 0; Zone = Stance.Upper; feint = struck = false;
+            swallow=returnCut=false;
             Set(OpponentState.Idle);
         }
         private void Set(OpponentState next) { State = next; age = 0; struck = false; staggerDuration = GameConfig.ArimaStagger; }
@@ -79,20 +92,27 @@ namespace Ganryujima.Combat
                     if (age >= GameConfig.ArimaIdle) Set(OpponentState.Circle);
                     break;
                 case OpponentState.Circle:
-                    float radial = distance > GameConfig.ArimaSpacing + 0.12f ? 1 : distance < GameConfig.ArimaSpacing - 0.25f ? -1 : 0;
+                    float spacing=Id==OpponentId.Kojiro?GameConfig.KojiroSpacing:GameConfig.ArimaSpacing;
+                    float radial = distance > spacing + 0.12f ? 1 : distance < spacing - 0.25f ? -1 : 0;
                     Vector2 tangent = new Vector2(-Forward.y, Forward.x) * (cycle % 2 == 0 ? 1 : -1);
-                    Move((Forward * radial + tangent * 0.32f) * (GameConfig.ArimaSpeed * dt), player);
-                    if (age >= GameConfig.ArimaCircle && distance <= GameConfig.ArimaReach)
+                    Move((Forward * radial + tangent * 0.32f) * (Speed * dt), player);
+                    if (age >= GameConfig.ArimaCircle && distance <= Reach)
                     {
                         Zone = (Stance)(cycle % 4);
-                        feint = cycle % 4 == 3; // First three attacks are honest, then one readable withdrawal.
+                        swallow=Id==OpponentId.Kojiro && cycle%3==2; returnCut=false;
+                        if(swallow) Zone=Stance.Lower;
+                        feint = Id==OpponentId.Yoshioka ? cycle%2==0 : cycle % 4 == 3;
+                        if(swallow) feint=false;
                         cycle++;
                         Set(OpponentState.Windup);
                     }
                     break;
                 case OpponentState.Windup:
-                    if (feint && age >= GameConfig.ArimaWindup * 0.55f) Set(OpponentState.Feint);
-                    else if (age >= GameConfig.ArimaWindup) Set(OpponentState.Strike);
+                    if (feint && age >= WindupDuration * 0.55f) Set(OpponentState.Feint);
+                    else if (age >= WindupDuration) Set(OpponentState.Strike);
+                    break;
+                case OpponentState.SwallowTurn:
+                    if(age>=GameConfig.SwallowTurnTime) Set(OpponentState.Strike);
                     break;
                 case OpponentState.Feint:
                     if (age >= GameConfig.ArimaFeint)
@@ -108,10 +128,14 @@ namespace Ganryujima.Combat
                         struck = true;
                         delta = player - Position;
                         if (Vector2.Angle(Forward, delta) <= GameConfig.HitAngle)
-                            combat.ReceiveStrike(Zone, delta.magnitude, playerFacingAngle, GameConfig.ArimaReach, GameConfig.ArimaDamage);
+                            combat.ReceiveStrike(Zone, delta.magnitude, playerFacingAngle, Reach, Id==OpponentId.Kojiro?GameConfig.KojiroDamage:GameConfig.ArimaDamage);
                     }
                     // Impact callbacks can replace this state with Recoil or Victory immediately.
-                    if (State == OpponentState.Strike && age >= GameConfig.ArimaStrike) Set(OpponentState.Recover);
+                    if (State == OpponentState.Strike && age >= GameConfig.ArimaStrike)
+                    {
+                        if(swallow && !returnCut) { returnCut=true; Zone=Stance.Upper; Set(OpponentState.SwallowTurn); }
+                        else Set(OpponentState.Recover);
+                    }
                     break;
                 case OpponentState.Recover:
                     if (age >= GameConfig.ArimaRecover) Set(OpponentState.Guard);
@@ -124,7 +148,7 @@ namespace Ganryujima.Combat
                     if (age >= GameConfig.ArimaRecoil) Set(OpponentState.Counter);
                     break;
                 case OpponentState.Counter:
-                    if (age >= GameConfig.ArimaCounter) Set(OpponentState.Guard);
+                    if (age >= CounterDuration) Set(OpponentState.Guard);
                     break;
                 case OpponentState.Staggered:
                     if (age >= staggerDuration) Set(OpponentState.Guard);

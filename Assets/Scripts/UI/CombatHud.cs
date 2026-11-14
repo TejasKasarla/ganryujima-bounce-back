@@ -37,21 +37,21 @@ namespace Ganryujima.UI
                 GUI.Label(new Rect(59, 215, 550, 190), heading, Style(58, Paper, true));
                 Fill(new Rect(65, 419, 62, 2), Vermilion);
                 string copy = combat.Over ? $"This exchange is over.\n{combat.Parries} parries. Another chance to find your footing." :
-                    "On this shore, every exchange begins with stillness.\nFace Arima Kihei. Read his blade. Earn your opening.";
+                     $"On this shore, every exchange begins with stillness.\nFace {opponent.Name}. Read his blade. Earn your opening.";
                 GUI.Label(new Rect(65, 448, 510, 82), copy, Style(17, Paper, true));
                 if (Button(new Rect(65, 566, 500, 52), combat.Over ? "DUEL AGAIN   →" : ready ? "ENTER THE COURT   →" : "PREPARING THE COURT…") && ready)
                 { if (combat.Over) restart(); else enter(); }
                 GUI.Label(new Rect(65, 654, 500, 105), "WASD  move     ·     Mouse  look / stance\nLMB  strike     ·     Hold LMB  heavy     ·     RMB  guard\n1–4  stance     ·     Space  retreat     ·     Esc  pause\nR  restart     ·     F2  field notes     ·     F1  camera diagnostics", tiny);
-                GUI.Label(new Rect(65, height - 65, 500, 30), "T H E   F I R S T   E X C H A N G E   /   A R I M A", Style(10, Gold));
+                GUI.Label(new Rect(65, height - 65, 500, 30), opponent.Name.ToUpperInvariant(), Style(10, Gold));
                 if (!string.IsNullOrEmpty(inputError)) GUI.Label(new Rect(65, 780, 500, 60), inputError, body);
             }
             else
             {
                 // Small identity and a thin target meter; the environment owns the screen.
                 GUI.Label(new Rect(38, 28, 370, 40), "Ganryujima", Style(26, Ink, true));
-                GUI.Label(new Rect(40, 68, 370, 22), "T H E   F I R S T   E X C H A N G E", Style(9, Ink));
-                GUI.Label(new Rect(width / 2 - 200, 28, 400, 30), "A R I M A   K I H E I", new GUIStyle(Style(11, Ink)) { alignment = TextAnchor.MiddleCenter });
-                Bar(new Rect(width / 2 - 160, 63, 320, 3), combat.TargetHealth / GameConfig.MaximumHealth, Vermilion);
+                GUI.Label(new Rect(40, 68, 370, 22), (opponent.Id==OpponentId.Arima?"THE FIRST EXCHANGE":opponent.Id==OpponentId.Yoshioka?"THE KYOTO CHALLENGE":"GANRYUJIMA / THE FINAL DUEL"), Style(9, Ink));
+                GUI.Label(new Rect(width / 2 - 200, 28, 400, 30), opponent.Name.ToUpperInvariant(), new GUIStyle(Style(11, Ink)) { alignment = TextAnchor.MiddleCenter });
+                Bar(new Rect(width / 2 - 160, 63, 320, 3), combat.TargetHealth / combat.TargetHealthLimit, Vermilion);
                 GUI.Label(new Rect(width - 230, 35, 185, 28), $"PARRIES   {combat.Parries:00}", new GUIStyle(Style(11, Ink)) { alignment = TextAnchor.MiddleRight });
                 Fill(new Rect(25, height - 143, 320, 111), new Color(0.06f, 0.10f, 0.10f, 0.79f));
                 GUI.Label(new Rect(42, height - 132, 270, 25), "VITALITY", tiny);
@@ -68,7 +68,7 @@ namespace Ganryujima.UI
                 if (opponent.Telling)
                 {
                     Fill(new Rect(width / 2 - 190, height / 2 - 119, 380, 57), new Color(0.05f, 0.09f, 0.09f, 0.8f));
-                    GUI.Label(new Rect(width / 2 - 180, height / 2 - 114, 360, 35), (faceGameplay?.FeintHint?.StartsWith("FEINT") == true ? "FEINT  /  " : "INCOMING  /  ") + opponent.Zone.ToString().ToUpperInvariant(), centered);
+                    GUI.Label(new Rect(width / 2 - 180, height / 2 - 114, 360, 35), (opponent.SwallowCut ? (opponent.RisingCut ? "SWALLOW RETURN  /  " : "SWALLOW CUT  /  ") : faceGameplay?.FeintHint?.StartsWith("FEINT") == true ? "FEINT  /  " : "INCOMING  /  ") + opponent.Zone.ToString().ToUpperInvariant(), centered);
                     Bar(new Rect(width / 2 - 160, height / 2 - 70, 320, 2), opponent.TellProgress, Gold);
                 }
                 if (faceGameplay?.FeintHint != null)
@@ -83,7 +83,7 @@ namespace Ganryujima.UI
                 }
                 string tell = opponent.CounterOpen ? $"COUNTER NOW  /  {opponent.CounterRemaining:F1}s" :
                     opponent.State == OpponentState.Feint ? "WITHDRAWAL — watch for a new zone" :
-                    opponent.State == OpponentState.Guard ? "ARIMA GUARDS  /  " + opponent.Zone.ToString().ToUpperInvariant() : "";
+                    opponent.State == OpponentState.Guard ? opponent.Name.ToUpperInvariant() + " GUARDS  /  " + opponent.Zone.ToString().ToUpperInvariant() : "";
                 if (tell.Length > 0) GUI.Label(new Rect(width / 2 - 300, height / 2 - 112, 600, 35), tell, centered);
                 if (combat.MessageRemaining > 0)
                     GUI.Label(new Rect(width / 2 - 350, height / 2 + 110, 700, 50), combat.Message, centered);
@@ -92,7 +92,7 @@ namespace Ganryujima.UI
             {
                 Fill(new Rect(width - 480, 110, 445, 330), new Color(0.06f, 0.10f, 0.10f, 0.95f));
                 GUI.Label(new Rect(width - 460, 125, 410, 310),
-                    $"FIELD NOTES / ARIMA: {opponent.State}\nTracking {face.tracking} · Calibrated {face.calibrated}\nComposure {face.composure:F2} · Lean {face.leanX:F1} · Gaze {face.gaze}\nLean event {face.leanTrigger} · Kiai {face.kiai} · Nod {face.nod}\nShake {face.shake} · Wink {face.wink}\nYaw {face.headYaw:F1} · Pitch {face.headPitch:F1} · Roll {face.headRoll:F1}\nTimestamp {face.timestamp:F0} ms\nI-frames {combat.InvulnerableRemaining:F2}s · Dodge {combat.DodgeCooldown:F1}s\nKiai {combat.KiaiCooldown:F1}s · Parry {combat.ParryWindow*1000:F0}ms\nLocal time ×{faceGameplay?.LocalTimeScale:F2} · Buffered {faceGameplay?.BufferedGesture}\n\nStance: ↑ upper / ↓ lower / ← middle / → side\nFallback: 1 upper / 2 middle / 3 lower / 4 side\nQ/E dodge · F kiai · Y/N nod/shake · C composure\nZ/X/V gaze · Nod/shake/wink reserved for story", tiny);
+                    $"FIELD NOTES / {opponent.Name}: {opponent.State}\nTracking {face.tracking} · Calibrated {face.calibrated}\nComposure {face.composure:F2} · Lean {face.leanX:F1} · Gaze {face.gaze}\nLean event {face.leanTrigger} · Kiai {face.kiai} · Nod {face.nod}\nShake {face.shake} · Wink {face.wink}\nYaw {face.headYaw:F1} · Pitch {face.headPitch:F1} · Roll {face.headRoll:F1}\nTimestamp {face.timestamp:F0} ms\nI-frames {combat.InvulnerableRemaining:F2}s · Dodge {combat.DodgeCooldown:F1}s\nKiai {combat.KiaiCooldown:F1}s · Parry {combat.ParryWindow*1000:F0}ms\nLocal time ×{faceGameplay?.LocalTimeScale:F2} · Buffered {faceGameplay?.BufferedGesture}\n\nStance: ↑ upper / ↓ lower / ← middle / → side\nFallback: 1 upper / 2 middle / 3 lower / 4 side\nQ/E dodge · F kiai · Y/N nod/shake · C composure\nZ/X/V gaze · Nod/shake/wink reserved for story", tiny);
             }
             GUI.color = Color.white;
         }

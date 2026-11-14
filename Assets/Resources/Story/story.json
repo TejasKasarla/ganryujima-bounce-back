@@ -8,7 +8,9 @@
       "speaker": "THE ROAD",
       "shot": "wide",
       "text": "Before the island, before the legend, there was a first opponent. On a quiet shore, Arima Kihei waits. A name can be won in a moment. A way of living takes longer.",
-      "next": "approach"
+      "next": "approach",
+      "opponent": "arima",
+      "arena": "court"
     },
     {
       "id": "approach",
@@ -78,7 +80,8 @@
       },
       "loseEffect": {
         "wounds": 1
-      }
+      },
+      "opponent": "arima"
     },
     {
       "id": "aftermath",
@@ -155,24 +158,344 @@
     },
     {
       "id": "mercy_end",
-      "kind": "ending",
+      "kind": "cutscene",
       "title": "A hand, not another cut",
-      "text": "You leave Arima alive. A victory can become the first step toward restraint. This first chapter ends here; the road to Ganryujima is still ahead.",
-      "shot": "wide"
+      "text": "You offer a hand instead of another cut. The road carries you toward Kyoto, where the Yoshioka name waits.",
+      "shot": "wide",
+      "next": "kyoto"
     },
     {
       "id": "fame_end",
-      "kind": "ending",
+      "kind": "cutscene",
       "title": "A name at a cost",
-      "text": "You leave with a victory others will repeat. Whether the name is worth its price will follow you down the road. This first chapter ends here; the road to Ganryujima is still ahead.",
-      "shot": "wide"
+      "text": "You leave with a victory others will repeat. The road carries you toward Kyoto, where the Yoshioka name waits.",
+      "shot": "wide",
+      "next": "kyoto"
     },
     {
       "id": "road_end",
       "kind": "ending",
-      "title": "The road continues",
-      "text": "You carry a wound and a lesson away from the court. Defeat has changed the journey, not ended it. This first chapter ends here; the road to Ganryujima is still ahead.",
+      "title": "The Ronin",
+      "text": "You walk away carrying a wound and a lesson. The road remains open, even when victory does not. Your journey belongs to you.",
       "shot": "shore"
+    },
+    {
+      "id": "kyoto",
+      "kind": "cutscene",
+      "title": "The Yoshioka challenge",
+      "speaker": "THE ROAD",
+      "text": "In Kyoto, a school's reputation becomes a single drawn blade. Yoshioka Denshichiro offers you a choice of ground. His first movement may be a lie.",
+      "next": "venue",
+      "opponent": "yoshioka",
+      "arena": "court",
+      "shot": "wide"
+    },
+    {
+      "id": "venue",
+      "kind": "choice",
+      "title": "Choose your ground",
+      "text": "The ground changes the encounter. What do you seek?",
+      "choices": [
+        {
+          "text": "The open court. Meet him plainly.",
+          "next": "y_open",
+          "effect": {
+            "honor": 1
+          }
+        },
+        {
+          "text": "The grove. Let patience answer pride.",
+          "next": "y_grove",
+          "effect": {
+            "honor": 2
+          }
+        },
+        {
+          "text": "The lantern court. Let others remember.",
+          "next": "y_lantern",
+          "effect": {
+            "fame": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": "y_open",
+      "kind": "cutscene",
+      "title": "An open challenge",
+      "speaker": "THE ROAD",
+      "text": "No shadows to hide behind. Watch his withdrawal: a feint changes the zone before the real cut.",
+      "next": "yoshioka",
+      "arena": "court",
+      "shot": "opponent"
+    },
+    {
+      "id": "y_grove",
+      "kind": "cutscene",
+      "title": "Beneath the pines",
+      "speaker": "THE ROAD",
+      "text": "The grove closes around the court. Keep your gaze centered to read his feints; let the false cut pass.",
+      "next": "yoshioka",
+      "arena": "grove",
+      "shot": "wide"
+    },
+    {
+      "id": "y_lantern",
+      "kind": "cutscene",
+      "title": "By the lanterns",
+      "speaker": "THE ROAD",
+      "text": "Small flames surround the court. Reputation has brought you here. Timing will decide whether you leave standing.",
+      "next": "yoshioka",
+      "arena": "lantern",
+      "shot": "opponent"
+    },
+    {
+      "id": "yoshioka",
+      "kind": "duel",
+      "title": "Yoshioka Denshichiro",
+      "opponent": "yoshioka",
+      "win": "y_after",
+      "lose": "y_fallen",
+      "winEffect": {
+        "fame": 1
+      },
+      "loseEffect": {
+        "wounds": 1
+      }
+    },
+    {
+      "id": "y_after",
+      "kind": "cutscene",
+      "title": "A school falls silent",
+      "speaker": "THE ROAD",
+      "text": "Yoshioka lowers his blade. The reputation you came to challenge is now in your hands.",
+      "next": "y_mercy",
+      "shot": "opponent"
+    },
+    {
+      "id": "y_mercy",
+      "kind": "choice",
+      "title": "How will Kyoto remember?",
+      "text": "The exchange is won. Choose its final meaning.",
+      "choices": [
+        {
+          "text": "Spare him. Leave the school its dignity.",
+          "next": "island",
+          "effect": {
+            "honor": 2
+          }
+        },
+        {
+          "text": "Claim his life and the tale of victory.",
+          "next": "island",
+          "effect": {
+            "fame": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": "y_fallen",
+      "kind": "cutscene",
+      "title": "Pride meets the ground",
+      "speaker": "THE ROAD",
+      "text": "A changed angle defeats your guard. The wound will travel with you, but this defeat need not decide the road.",
+      "next": "y_return",
+      "shot": "shore"
+    },
+    {
+      "id": "y_return",
+      "kind": "choice",
+      "title": "Rise for another exchange?",
+      "text": "You can gather your composure or leave Kyoto behind.",
+      "choices": [
+        {
+          "text": "Return. Rest, then challenge him again.",
+          "next": "y_rest",
+          "effect": {
+            "honor": 1
+          }
+        },
+        {
+          "text": "Leave the challenge and walk onward.",
+          "next": "road_end",
+          "effect": {
+            "honor": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "y_rest",
+      "kind": "meditation",
+      "title": "Stillness beneath the pines",
+      "text": "Draw the circle. Begin again.",
+      "shot": "shore",
+      "next": "yoshioka"
+    },
+    {
+      "id": "island",
+      "kind": "cutscene",
+      "title": "Toward Ganryujima",
+      "speaker": "THE ROAD",
+      "text": "The road ends at water. Across the channel waits Sasaki Kojiro, whose long blade gives the distance a different meaning.",
+      "next": "arrival_time",
+      "opponent": "kojiro",
+      "arena": "beach",
+      "shot": "wide"
+    },
+    {
+      "id": "arrival_time",
+      "kind": "choice",
+      "title": "When will you arrive?",
+      "text": "The boat is ready. What will your arrival say?",
+      "choices": [
+        {
+          "text": "On time. Honor the agreed dawn.",
+          "next": "dawn",
+          "effect": {
+            "honor": 2
+          }
+        },
+        {
+          "text": "Late. Make him wait on the sand.",
+          "next": "late",
+          "effect": {
+            "fame": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": "dawn",
+      "kind": "cutscene",
+      "title": "Dawn on the island",
+      "speaker": "THE ROAD",
+      "text": "The sea is quiet. Kojiro waits in ivory lacquer. His Swallow Cut sweeps LOW, then returns HIGH. Parry either cut to break the sequence, or leave his long reach.",
+      "next": "kojiro",
+      "arena": "beach",
+      "shot": "opponent"
+    },
+    {
+      "id": "late",
+      "kind": "cutscene",
+      "title": "A sun already rising",
+      "speaker": "THE ROAD",
+      "text": "Kojiro has waited. His long sword has not grown shorter. The Swallow Cut begins LOW and returns HIGH: one opening can become two threats.",
+      "next": "kojiro",
+      "arena": "beach_late",
+      "shot": "opponent"
+    },
+    {
+      "id": "kojiro",
+      "kind": "duel",
+      "title": "Sasaki Kojiro",
+      "opponent": "kojiro",
+      "win": "k_after",
+      "lose": "k_fallen",
+      "winEffect": {
+        "fame": 1
+      },
+      "loseEffect": {
+        "wounds": 1
+      }
+    },
+    {
+      "id": "k_after",
+      "kind": "cutscene",
+      "title": "After the swallow",
+      "speaker": "THE ROAD",
+      "text": "The long blade stills. Waves erase the marks of your feet. What survives this island is the way you choose to leave it.",
+      "next": "k_mercy",
+      "shot": "opponent"
+    },
+    {
+      "id": "k_mercy",
+      "kind": "choice",
+      "title": "What remains after victory?",
+      "text": "You have reached the end of the challenge.",
+      "choices": [
+        {
+          "text": "Lower the sword. Let the rivalry end.",
+          "next": "final",
+          "effect": {
+            "honor": 3
+          }
+        },
+        {
+          "text": "Take his life. Carry the undefeated name.",
+          "next": "final",
+          "effect": {
+            "fame": 3
+          }
+        }
+      ]
+    },
+    {
+      "id": "k_fallen",
+      "kind": "cutscene",
+      "title": "The return cuts deep",
+      "speaker": "THE ROAD",
+      "text": "The long blade finds its mark. You leave the sand wounded. A final defeat is still a place from which to rise.",
+      "next": "k_return",
+      "shot": "shore"
+    },
+    {
+      "id": "k_return",
+      "kind": "choice",
+      "title": "Will you face the island again?",
+      "text": "The boat can wait for your next breath.",
+      "choices": [
+        {
+          "text": "Yes. Rest, heal, and return.",
+          "next": "k_rest",
+          "effect": {
+            "honor": 1
+          }
+        },
+        {
+          "text": "No. Carry the lesson beyond the island.",
+          "next": "final",
+          "effect": {
+            "honor": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "k_rest",
+      "kind": "meditation",
+      "title": "An enso beside the sea",
+      "text": "Let the circle close. Return to the sand.",
+      "shot": "shore",
+      "next": "kojiro"
+    },
+    {
+      "id": "final",
+      "kind": "ending",
+      "rule": "final",
+      "title": "The road you made"
+    },
+    {
+      "id": "ending_way",
+      "kind": "ending",
+      "title": "The Way",
+      "shot": "shore",
+      "text": "You won the island and found a reason to lower your blade. Honor weighs more than a perfect record. What you carry forward is a practice: meet the next moment with a steadier hand."
+    },
+    {
+      "id": "ending_undefeated",
+      "kind": "ending",
+      "title": "The Undefeated",
+      "shot": "wide",
+      "text": "Arima. Yoshioka. Kojiro. No challenge brought you down. Your name crosses the water before you do. Whether that name becomes a burden or a beginning remains yours to decide."
+    },
+    {
+      "id": "ending_ronin",
+      "kind": "ending",
+      "title": "The Ronin",
+      "shot": "shore",
+      "text": "Victory and defeat have both marked your road. You leave without a perfect legend to hide behind. You have learned how to stand again, and the horizon still has room for your next step."
     }
   ]
 }

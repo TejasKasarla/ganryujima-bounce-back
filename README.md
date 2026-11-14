@@ -1,6 +1,6 @@
 # Ganryujima: Bounce Back — Unity
 
-**Unity 6.3 LTS (6000.3.10f1), C#, built-in renderer. Milestones 1–6 and the requested environment art pass are complete.** A first-person duel against Arima Kihei with a procedural arena, katana, stamina, directional defense, and keyboard face mock. The original web prototype is archived in work/web-prototype. AGENTS.md contains the full brief and Unity engine override.
+**Unity 6.3 LTS (6000.3.10f1), C#, built-in renderer. Milestones 1–7 and the requested environment art pass are complete.** A first-person story journey through Arima, Yoshioka and Kojiro with a procedural arena, katana, stamina, directional defense, and keyboard face mock. The original web prototype is archived in work/web-prototype. AGENTS.md contains the full brief and Unity engine override.
 
 ## Open and play
 
@@ -105,7 +105,7 @@ Environment and player-weapon art are generated locally in C#. Arima uses the CC
 The editor method Ganryujima.Editor.VisualCapture.Run runs combat checks and saves actual camera renders after entering Play Mode. It accepts an optional GANRYUJIMA_CAPTURE_DIR environment variable. Camera renders exclude the HUD. The original 38 combat checks continue to pass, with no changes to Dev A's face-input files.
 ## Next milestone
 
-Milestone 7: remaining opponents/arenas, Kojiro's Swallow Cut, and final ending content. Cut Yoshioka before polish if needed. Continue one milestone per request.
+Milestone 8: final animation/environment/audio polish, pause flow, performance tuning, build/demo packaging and integration of Dev A's start screen when pushed. Continue one milestone per request.
 
 Dev A is also building the **start/title screen** and will push it separately. Dev B owns the gameplay HUD and pause flow; preserve Dev A's start-screen work when integrating incoming commits.
 
@@ -135,7 +135,7 @@ Finisher checks cover victory-only activation, one-shot trigger, pause, single i
 
 ## Story chapter (milestone 5)
 
-Assets/Resources/Story/story.json is the narrative source. Its validated graph supports cutscene, choice, duel, meditation and ending nodes. This milestone contains Arima's first chapter: introduction → three-way approach → duel → finishing-cut aftermath/mercy choice, or loss → wound/resolve choice → rest/retry or departure. The ending nodes are **chapter summaries**, not the three final Ganryujima endings planned for milestone 7. No additional opponents are implied.
+Assets/Resources/Story/story.json is the narrative source. Its validated graph supports cutscene, choice, duel, meditation and ending nodes. Milestone 5 originally added Arima's first chapter: introduction → three-way approach → duel → finishing-cut aftermath/mercy choice, or loss → wound/resolve choice → rest/retry or departure. Milestone 7 expands those chapter continuations into Kyoto and Ganryujima, with the three final endings described below.
 
 Cutscenes use camera shots, letterbox and typewriter captions. **Space** or click reveals a line, then advances; **Esc** pauses/resumes. Focus loss pauses narrative input. Three-way choices use gaze/lean to select, nod/Enter to confirm, or **1–3/click** to choose directly. Binary choices accept nod/Y for first and shake/N for second, plus **1–2/click**. A brief entry delay rejects pulses carried from the previous scene. No tracked face or unknown gaze blocks keyboard/mouse fallbacks.
 
@@ -145,7 +145,7 @@ Journey state lasts for the current Play session. It is not saved to disk. Resta
 
 Dev A start-screen integration: call the existing GameLoop component's public **BeginJourney()** once startup is ready (FramesTicked > 0). It resets and begins the chapter. The existing entry button uses the same method; no separate title screen was added.
 
-Verification: **182 deterministic assertions** (38 combat, 33 AI, 46 face, 10 finisher, 33 story, 22 meditation), plus Unity scene checks for story-camera restore, live face ticks during narrative, choice-to-duel handoff, wounded retry settings, aftermath/ending transitions and new journey. Run Ganryujima → Check story rules, or batch method Ganryujima.Editor.StoryPlayChecks.Capture for the integration run and actual camera shots (without IMGUI caption overlays). Narrative is original legend-inspired fiction, not a verified historical account.
+Verification: **222 deterministic assertions** (38 combat, 33 AI, 46 face, 10 finisher, 33 story, 22 meditation, 40 content), plus Unity scene checks for story-camera restore, live face ticks during narrative, choice-to-duel handoff, wounded retry settings, aftermath/ending transitions and new journey. Run Ganryujima → Check story rules, or batch method Ganryujima.Editor.StoryPlayChecks.Capture for the integration run and actual camera shots (without IMGUI caption overlays). Narrative is original legend-inspired fiction, not a verified historical account.
 
 ## Meditation and wound healing (milestone 6)
 
@@ -158,3 +158,23 @@ After completion, **Space** or the return button resumes the duel with the heale
 The circle is a shader-driven UI visualization; the shore and imported samurai assets are reused. SFXMint's CC0 Singing Bowl Temple Bell 01 provides the completion audio. Its source URL, hash, license and AI-origin disclosure are retained in Resources/Audio/Meditation. All assets are local at runtime.
 
 Validation: 182 rule assertions plus Ganryujima.Editor.MeditationPlayChecks.Capture exercised the actual enso shader, broken/completed states, audio asset import, healing stats, camera/duel restoration and continuing face ticks. Camera renders were inspected at half, broken and full progress; IMGUI captions are not included in those renders. Live physical-webcam accuracy remains hardware-dependent and was not retuned here. Run Ganryujima → Check meditation rules for the focused checks.
+
+## Full journey and endings (milestone 7)
+
+The story now continues from Arima to **Yoshioka Denshichiro**, then to **Sasaki Kojiro at Ganryujima**. Each defeat has its own return/departure choice and meditation node; wounds and recovery totals carry across encounters. Every opponent supports the finishing cinematic. R restarts the current encounter with its health/profile and existing wounds; a new journey restores Arima and the original court.
+
+Yoshioka feints on alternating attacks, starting with his first. Choose the open court, pine grove, or lantern court before his duel. The choice changes visible dressing, fog/light atmosphere and Honor/Fame. Centered gaze helps identify his initial false windup. After victory, spare/kill choices affect the journey's values. The arrival choice at Ganryujima adds Honor for being on time, or Fame for arriving late; the late beach has warmer light.
+
+Kojiro has **125 vitality**, **3.35 m reach**, faster footwork, and a shorter **0.85 s counter window**. Every third attack is a Swallow Cut: a low sweep, then a separately telegraphed upper return after 0.58 s. Parrying either cut sends him into recoil and cancels the remaining sequence. Blocking or avoiding the sweep still leaves the return; change guard, retreat out of reach, or interrupt with kiai. Signature timers freeze with the rest of combat. The beach has a flat playable center, sloping shoreline, sea, driftwood/outcrops, and downloaded 1K coastal sand color/normal maps.
+
+The final summary retains Honor, Fame, wounds, wins/losses, parries, comebacks, recoveries, and Bounce Back. Ending priority is deterministic:
+
+- **The Way:** defeat Kojiro with Honor at least 7 and Honor at least Fame.
+- **The Undefeated:** otherwise defeat Kojiro without a recorded loss.
+- **The Ronin:** otherwise; leaving an earlier challenge also ends on the Ronin road.
+
+Arima, Yoshioka and Kojiro use **the same CC0 Grab3D skinned mesh**, with red, charcoal and ivory lacquer variants, respectively. Kojiro is slightly taller and carries the longer blade. These are fictional visual representations, not historical portraits or three independently authored downloaded models. The recolor shader preserves the original skin/metal/normal textures. Poly Haven's [Coast Sand 01](https://polyhaven.com/a/coast_sand_01) is CC0; source/license and download manifest are retained in Resources/Art/Coast. The model candidate inspected in scratch work was not included because its precise asset provenance was not established.
+
+Verification: all **222 rule assertions** pass. Ganryujima.Editor.ContentPlayChecks.Capture runs the campaign handoffs in the real Unity scene, checks venue changes, beach collision/textures, character shaders, signature poses, final finisher/ending, face ticks, and reset to Arima. Actual camera renders of all Yoshioka venues and Kojiro's beach were inspected. This is functional content; character-motion refinement, richer ambience, performance benchmarking and final presentation remain milestone 8.
+
+Historical context: the location/duel inspiration is discussed by [Japan Tourism Agency's Ganryujima entry](https://www.mlit.go.jp/tagengo-db/en/R5-00678.html) and [Shimonoseki's official tourism site](https://shimonoseki.travel/about-en/). Dialogue, mercy branches, choices of venue, three endings and the playable Swallow Cut are authored game fiction inspired by the Musashi legends; do not treat the game as a historical reconstruction.

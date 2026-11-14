@@ -30,8 +30,8 @@ namespace Ganryujima.Editor
             Continue(); Check(story.Current.kind=="duel","Introduction hands off to duel");
             story.ResolveDuel(true,3); Check(!story.ResolveDuel(true,3) && story.Stats.Parries==3 && story.Stats.Wins==1,"Duel result records once");
             Continue(); Check(story.Current.id=="mercy","Win reaches binary aftermath choice");
-            story.Choose(0); Check(story.Current.id=="mercy_end" && story.Stats.Honor==5 && story.Stats.Fame==1,"Mercy branch produces Honor and chapter ending");
-            Check(story.Stats.BounceBack==3 && !story.Continue(),"Summary tally computed, ending cannot skip to missing node");
+            story.Choose(0); Check(story.Current.id=="mercy_end" && story.Stats.Honor==5 && story.Stats.Fame==1,"Mercy branch produces Honor and chapter continuation");
+            Check(story.Stats.BounceBack==3 && !story.Continue(),"Tally computed; continuation first reveals remaining text");
             story.Reset(); Duel(); story.ResolveDuel(false,2);
             Check(story.Stats.Wounds==1 && story.Stats.Losses==1 && story.Current.id=="fallen","Defeat continues with wound");
             Continue(); story.Choose(0); Check(story.Current.kind=="meditation","Return path supports meditation node");

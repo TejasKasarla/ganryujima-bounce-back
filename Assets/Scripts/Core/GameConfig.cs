@@ -130,5 +130,16 @@ namespace Ganryujima.Core
         public const float MeditationBreakThreshold = 0.45f;
         public const float MeditationBreakFlash = 0.65f;
         public const float MeditationBellVolume = 0.45f;
+        public const float YoshiokaWindup = 0.88f;
+        public const float YoshiokaSpeed = 1.9f;
+        public const float KojiroWindup = 0.85f;
+        public const float KojiroSpeed = 2f;
+        public const float KojiroReach = 3.35f;
+        public const float KojiroSpacing = 2.85f;
+        public const float KojiroHealth = 125f;
+        public const float KojiroDamage = 22f;
+        public const float KojiroCounter = 0.85f;
+        public const float SwallowTurnTime = 0.58f;
+        public const float EndingHonorThreshold = 7f;
     }
 }

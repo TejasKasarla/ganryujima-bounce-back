@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using Ganryujima.Core;
+using Ganryujima.Combat;
 
 namespace Ganryujima.Story
 {
@@ -9,7 +10,7 @@ namespace Ganryujima.Story
     [Serializable] public sealed class StoryChoice { public string text, next; public StoryEffect effect; }
     [Serializable] public sealed class StoryNode
     {
-        public string id, kind, title, speaker, text, shot, next, win, lose;
+        public string id, kind, title, speaker, text, shot, next, win, lose, opponent, arena, rule;
         public StoryChoice[] choices;
         public StoryEffect effect, winEffect, loseEffect;
     }
@@ -38,6 +39,9 @@ namespace Ganryujima.Story
                 }
                 else if(node.kind=="duel") { Require(node.win); Require(node.lose); }
                 else if(node.kind!="ending") Require(node.next);
+                if(node.rule=="final") { Require("ending_way"); Require("ending_undefeated"); Require("ending_ronin"); }
+                if(!string.IsNullOrEmpty(node.opponent) && node.opponent!="arima" && node.opponent!="yoshioka" && node.opponent!="kojiro") throw new InvalidOperationException("Unknown opponent: "+node.opponent);
+                if(!string.IsNullOrEmpty(node.arena) && node.arena!="court" && node.arena!="grove" && node.arena!="lantern" && node.arena!="beach" && node.arena!="beach_late") throw new InvalidOperationException("Unknown arena: "+node.arena);
             }
             return map;
         }
@@ -52,6 +56,7 @@ namespace Ganryujima.Story
         public int Recoveries { get; internal set; }
         public int Wins { get; internal set; }
         public int Losses { get; internal set; }
+        public bool FinalVictory { get; internal set; }
         public int BounceBack => Parries+Comebacks+Recoveries;
         internal void Apply(StoryEffect effect)
         {
@@ -73,12 +78,19 @@ namespace Ganryujima.Story
         public int RevealedCharacters { get; private set; }
         public bool TextComplete => RevealedCharacters >= (Current.text??"").Length;
         public bool MeditationComplete { get; private set; }
+        public OpponentId Encounter { get; private set; }
+        public string Arena { get; private set; }
         public event Action<StoryNode> Changed;
         public StoryModel(StoryGraph graph) { this.graph=graph; nodes=graph.Validate(); Reset(); }
-        public void Reset() { Stats=new JourneyStats(); Enter(graph.start); }
+        public void Reset() { Stats=new JourneyStats(); Encounter=OpponentId.Arima; Arena="court"; Enter(graph.start); }
         private void Enter(string id)
         {
+            if(nodes[id].rule=="final")
+                id=Stats.FinalVictory && Stats.Honor>=GameConfig.EndingHonorThreshold && Stats.Honor>=Stats.Fame ? "ending_way" :
+                    Stats.FinalVictory && Stats.Losses==0 ? "ending_undefeated" : "ending_ronin";
             Current=nodes[id]; Age=0; RevealedCharacters=0; MeditationComplete=false;
+            if(!string.IsNullOrEmpty(Current.opponent)) Encounter=Current.opponent=="kojiro"?OpponentId.Kojiro:Current.opponent=="yoshioka"?OpponentId.Yoshioka:OpponentId.Arima;
+            if(!string.IsNullOrEmpty(Current.arena)) Arena=Current.arena;
             Stats.Apply(Current.effect);
             Changed?.Invoke(Current);
         }
@@ -121,6 +133,7 @@ namespace Ganryujima.Story
             if(won) { Stats.Wins++; if(Stats.Wounds>0) Stats.Comebacks++; }
             else Stats.Losses++;
             var node=Current;
+            if(won && Encounter==OpponentId.Kojiro) Stats.FinalVictory=true;
             Stats.Apply(won?node.winEffect:node.loseEffect);
             Enter(won?node.win:node.lose);
             return true;

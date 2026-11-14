@@ -20,6 +20,7 @@ namespace Ganryujima.Core
         private CombatModel combat;
         private ArimaOpponent opponent;
         private ArimaArt opponentArt;
+        private ArenaDirector arenas;
         public ArimaOpponent Opponent => opponent;
         private CombatPresentation presentation;
         private FaceGameplay faceGameplay;
@@ -53,6 +54,7 @@ namespace Ganryujima.Core
             Application.targetFrameRate = 60;
             Transform arena = ArenaBuilder.Build();
             arena.Find("Practice Target").gameObject.SetActive(false);
+            arenas=new ArenaDirector(arena);
             opponentArt = new ArimaArt(arena);
             target = opponentArt.Root;
             var body = new GameObject("Player");
@@ -238,6 +240,13 @@ namespace Ganryujima.Core
         private void OnStoryNode(StoryNode node)
         {
             storyPaused=false;
+            arenas.Show(story.Arena);
+            if(opponent.Id!=story.Encounter)
+            {
+                finisher.Reset(); opponent.Configure(story.Encounter);
+                combat.Reset(story.Stats.Wounds,opponent.MaximumHealth);
+                opponentArt.SetIdentity(opponent); opponentArt.Tick(opponent,1);
+            }
             meditation.Reset(); meditationScene.Show(node.kind=="meditation");
             atmosphere.SetComposure(GameConfig.NeutralComposure);
             if(node.kind=="duel") { storyCamera.Restore(); Restart(); }
@@ -252,7 +261,7 @@ namespace Ganryujima.Core
         {
             if (!ready) return;
             finisher.Reset();
-            combat.Reset(journeyStarted?story.Stats.Wounds:0); opponent.Reset(); opponentArt.Tick(opponent, 1); presentation.Reset();
+            combat.Reset(journeyStarted?story.Stats.Wounds:0,opponent.MaximumHealth); opponent.Reset(); opponentArt.Tick(opponent, 1); presentation.Reset();
             faceGameplay.Reset();
             ResetPlayer();
             SetCapture(true);

@@ -27,7 +27,7 @@ namespace Ganryujima.Editor
                 if(EditorApplication.isPlaying && game!=null && game.FramesTicked>=20)
                 {
                     EditorApplication.update-=Check; SessionState.SetBool("GanryujimaStoryCapture",false);
-                    try { await VerifyScene(game); Debug.Log("STORY INTEGRATION PASS: intro camera, typewriter, choice-to-duel, loss continuation, wound retry, finisher aftermath, summary and new journey."); EditorApplication.Exit(0); }
+                    try { await VerifyScene(game); Debug.Log("STORY INTEGRATION PASS: intro camera, typewriter, choice-to-duel, loss continuation, wound retry, finisher aftermath, chapter continuation and new journey."); EditorApplication.Exit(0); }
                     catch(Exception e) { Debug.LogException(e); EditorApplication.Exit(1); }
                 }
                 else if(EditorApplication.timeSinceStartup>deadline) { Debug.LogError("Story capture timeout"); EditorApplication.Exit(1); }
@@ -60,9 +60,9 @@ namespace Ganryujima.Editor
             // Drive the result explicitly: batch mode lacks the focused cursor capture used by live gameplay.
             if(game.Story.Current.kind=="duel") game.Story.ResolveDuel(true,game.Combat.Parries);
             Continue(); game.Story.Choose(0);
-            Assert(game.Story.Current.kind=="ending" && game.Story.Stats.Comebacks==1,"Wounded victory did not reach chapter summary");
+            Assert(game.Story.Current.id=="mercy_end" && game.Story.Stats.Comebacks==1,"Wounded victory did not reach Arima chapter continuation");
             cine.Tick(2); await Task.Delay(120);
-            VisualCapture.Save(camera,Path.Combine(output,"chapter-end.png"));
+            VisualCapture.Save(camera,Path.Combine(output,"arima-aftermath.png"));
             game.BeginJourney(); Assert(game.Story.Stats.Wounds==0 && game.Story.Stats.Fame==0 && game.Story.Current.id=="arrival","New journey did not clear prior stats");
         }
     }

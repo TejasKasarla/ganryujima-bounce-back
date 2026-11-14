@@ -22,5 +22,6 @@ namespace Ganryujima.World
             Root.rotation = Quaternion.LookRotation(new Vector3(ai.Forward.x, 0, ai.Forward.y));
             rig.Pose(ai, dt);
         }
+        public void SetIdentity(ArimaOpponent ai) { rig.SetIdentity(ai.Id); Root.name=ai.Name; }
     }
 }

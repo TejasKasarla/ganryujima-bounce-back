@@ -17,14 +17,36 @@ namespace Ganryujima.World
         private Quaternion swordRotation = Quaternion.Euler(25, 0, -12);
         private Vector3 swordPosition = new Vector3(.04f, 1.18f, .43f);
         private Vector3 modelOrigin;
+        private Material originalArmor;
+        private readonly Dictionary<OpponentId,Material> variants=new Dictionary<OpponentId,Material>();
+        private Vector3 modelScale;
 
         public void Initialize()
         {
             foreach (Transform bone in Model.GetComponentsInChildren<Transform>()) bones[bone.name] = bone;
             foreach (var animator in Model.GetComponentsInChildren<Animator>()) animator.enabled = false;
             modelOrigin = Model.transform.localPosition;
+            modelScale=Model.transform.localScale;
+            originalArmor=Model.GetComponentInChildren<SkinnedMeshRenderer>().sharedMaterial;
             sword = KatanaArt.Build(transform, false, false);
             lastPosition = transform.position;
+        }
+        public void SetIdentity(OpponentId id)
+        {
+            if(!variants.TryGetValue(id,out var material))
+            {
+                material=originalArmor;
+                if(id!=OpponentId.Arima)
+                {
+                    var owner=GetComponent<GeneratedResources>()??gameObject.AddComponent<GeneratedResources>();
+                    material=owner.Own(new Material(originalArmor)); material.shader=Resources.Load<Shader>("Shaders/SamuraiLacquer");
+                    material.SetColor("_ArmorTint",id==OpponentId.Kojiro?new Color(.8f,.82f,.72f):new Color(.065f,.11f,.14f));
+                }
+                variants[id]=material;
+            }
+            foreach(var renderer in Model.GetComponentsInChildren<SkinnedMeshRenderer>()) renderer.sharedMaterial=material;
+            Model.transform.localScale=modelScale*(id==OpponentId.Kojiro?1.055f:1);
+            sword.localScale=new Vector3(1,id==OpponentId.Kojiro?1.38f:1,1);
         }
 
         public void Pose(ArimaOpponent ai, float dt)
