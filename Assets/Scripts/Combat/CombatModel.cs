@@ -5,12 +5,14 @@ using Ganryujima.Core;
 namespace Ganryujima.Combat
 {
     public enum Stance { Upper, Middle, Lower, Side }
-    public enum Impact { TargetHit, HeavyHit, Miss, Block, Parry, PlayerHit, GuardBreak }
+    public enum Impact { TargetHit, HeavyHit, Miss, Block, Parry, PlayerHit, GuardBreak, TargetBlock, CounterHit }
+    public enum TargetResponse { Hit, Block, Counter }
 
     /// <summary>Deterministic rules, independent of Unity input, visuals, and face tracking.</summary>
     public sealed class CombatModel
     {
         public event Action<Impact> Impacted;
+        public Func<bool, Stance, TargetResponse> ResolveTargetStrike;
         public float Health { get; private set; }
         public float Stamina { get; private set; }
         public float TargetHealth { get; private set; }
@@ -132,17 +134,25 @@ namespace Ganryujima.Combat
                 float reach = Heavy ? GameConfig.HeavyReach : GameConfig.LightReach;
                 if (distance <= reach && aimAngle <= GameConfig.HitAngle)
                 {
-                    TargetHealth = Mathf.Max(0, TargetHealth - (Heavy ? GameConfig.HeavyDamage : GameConfig.LightDamage));
-                    Emit(Heavy ? Impact.HeavyHit : Impact.TargetHit, Heavy ? "HEAVY HIT" : "HIT");
+                    var response = ResolveTargetStrike?.Invoke(Heavy, AttackStance) ?? TargetResponse.Hit;
+                    if (response == TargetResponse.Block) Emit(Impact.TargetBlock, "ARIMA GUARDS — change zone or use a heavy cut.");
+                    else
+                    {
+                        float multiplier = response == TargetResponse.Counter ? GameConfig.CounterDamageMultiplier : 1;
+                        TargetHealth = Mathf.Max(0, TargetHealth - (Heavy ? GameConfig.HeavyDamage : GameConfig.LightDamage) * multiplier);
+                        Emit(response == TargetResponse.Counter ? Impact.CounterHit : Heavy ? Impact.HeavyHit : Impact.TargetHit,
+                            response == TargetResponse.Counter ? "COUNTER — an opening earned!" : Heavy ? "HEAVY HIT" : "HIT");
+                    }
                 }
                 else Emit(Impact.Miss, "Out of reach or off target.");
             }
             if (swingAge >= swingDuration) swingDuration = 0;
         }
 
-        public void ReceiveStrike(Stance zone, float distance, float facingAngle)
+        public void ReceiveStrike(Stance zone, float distance, float facingAngle,
+            float reach = GameConfig.PracticeReach, float damage = GameConfig.PracticeDamage)
         {
-            if (Over || distance > GameConfig.PracticeReach || RecoilRemaining > 0) return;
+            if (Over || distance > reach || RecoilRemaining > 0) return;
             if (Guarding && Stance == zone && facingAngle <= GameConfig.GuardAngle)
             {
                 if (ParryOpen)
@@ -160,11 +170,11 @@ namespace Ganryujima.Combat
                 else BreakGuard(true);
                 return;
             }
-            Health = Mathf.Max(0, Health - GameConfig.PracticeDamage);
+            Health = Mathf.Max(0, Health - damage);
             // A hit interrupts a charged or pending strike, never refunding spent stamina.
             CancelHeldInput();
             swingDuration = 0;
-            Emit(Impact.PlayerHit, "HIT TAKEN — face the post and match its zone.");
+            Emit(Impact.PlayerHit, "HIT TAKEN — face your opponent and match the zone.");
         }
 
         private void BreakGuard(bool damage)

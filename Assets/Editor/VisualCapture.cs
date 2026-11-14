@@ -12,6 +12,7 @@ namespace Ganryujima.Editor
         public static void Run()
         {
             CombatChecks.Verify();
+            OpponentChecks.Verify();
             ProjectSetup.CreateScene();
             SessionState.SetBool("GanryujimaCapture", true);
             EditorApplication.EnterPlaymode();

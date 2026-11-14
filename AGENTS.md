@@ -1,6 +1,6 @@
 # Active project instructions — Unity (user correction)
 
-The user explicitly changed the engine to **Unity/C#**. These instructions take precedence over all web-stack references in the original brief below. Work on **one milestone per request**. Milestones 1 and 2 are complete. The user requested a visual art pass before milestone 3: naturalistic Japanese coastal scenery with the original ink-wash palette and red accents. This visual pass takes priority over the original milestone order. Do not start opponent AI in this request.
+The user explicitly changed the engine to **Unity/C#**. These instructions take precedence over all web-stack references in the original brief below. Work on **one milestone per request**. Milestones 1–3 and the requested environment art pass are complete. Milestone 3 adds Arima opponent FSM, zone tells, feints, movement, stagger, and parry → recoil → counter window. Preserve the coastal art pass and Dev A face-input boundary. Do not start milestone 4 in this request.
 
 - Engine: Unity 6.3 LTS, installed editor 6000.3.10f1. Built-in 3D renderer, procedural geometry, no downloaded art. Desktop keyboard/mouse prototype.
 - Project root contains Assets/, Packages/, ProjectSettings/. Open this folder with Unity Hub.

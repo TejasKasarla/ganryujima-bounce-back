@@ -69,5 +69,25 @@ namespace Ganryujima.Core
         public const float SparkDuration = 0.32f;
         public const float SparkSpeed = 3.6f;
         public const float FeedbackDuration = 1.5f;
+        // Arima: tutorial opponent. All times use the same paused / hit-stop clock.
+        public const float ArimaIdle = 0.65f;
+        public const float ArimaCircle = 0.8f;
+        public const float ArimaWindup = 1.05f;
+        public const float ArimaStrike = 0.24f;
+        public const float ArimaImpactAt = 0.10f;
+        public const float ArimaRecover = 0.85f;
+        public const float ArimaFeint = 0.32f;
+        public const float ArimaRecoil = 0.22f;
+        public const float ArimaCounter = 1.05f;
+        public const float ArimaStagger = 0.7f;
+        public const float ArimaGuard = 0.65f;
+        public const float ArimaReach = 2.7f;
+        public const float ArimaDamage = 18f;
+        public const float ArimaSpeed = 1.65f;
+        public const float ArimaSpacing = 2.25f;
+        public const float ArimaRadius = 0.4f;
+        public const float ArimaLungeSpeed = 1.2f;
+        public const float ArimaRecoilSpeed = 0.9f;
+        public const float CounterDamageMultiplier = 1.5f;
     }
 }

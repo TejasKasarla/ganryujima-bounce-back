@@ -4,7 +4,7 @@ namespace Ganryujima.World
 {
     public static class KatanaArt
     {
-        public static Transform Build(Transform camera)
+        public static Transform Build(Transform camera, bool firstPerson = true)
         {
             var sword = new GameObject("Forged katana").transform;
             sword.SetParent(camera, false);
@@ -43,12 +43,12 @@ namespace Ganryujima.World
             var rim = new Vector3[65];
             for (int i = 0; i < rim.Length; i++) { float a = i * Mathf.PI * 2 / 64; rim[i] = new Vector3(Mathf.Cos(a) * 0.068f, 0.15f, Mathf.Sin(a) * 0.053f); }
             ArenaBuilder.Tube("Tsuba rim", sword, assets, rim, 0.002f, 0.002f, bronze, 5);
-            Hand(sword, assets, new Vector3(0.035f, 0.04f, 0.008f), glove, sleeve, false);
-            Hand(sword, assets, new Vector3(-0.025f, -0.09f, 0.015f), glove, sleeve, true);
+            Hand(sword, assets, new Vector3(0.035f, 0.04f, 0.008f), glove, sleeve, false, firstPerson);
+            Hand(sword, assets, new Vector3(-0.025f, -0.09f, 0.015f), glove, sleeve, true, firstPerson);
             return sword;
         }
 
-        private static void Hand(Transform sword, GeneratedResources assets, Vector3 p, Material glove, Material sleeve, bool left)
+        private static void Hand(Transform sword, GeneratedResources assets, Vector3 p, Material glove, Material sleeve, bool left, bool firstPerson)
         {
             float sign = left ? -1 : 1;
             var root = new GameObject(left ? "Left wrapped hand" : "Right wrapped hand").transform;
@@ -63,7 +63,7 @@ namespace Ganryujima.World
                     new Vector3(-sign * 0.045f, y, 0.004f), new Vector3(-sign * 0.02f, y + 0.003f, 0.026f) }, 0.009f, 0.008f, glove, 7);
             }
             ArenaBuilder.Tube("Thumb", root, assets, new[] { new Vector3(sign * 0.035f, 0.04f, 0), new Vector3(0, 0.045f, -0.035f), new Vector3(-sign * 0.025f, 0.02f, -0.03f) }, 0.013f, 0.01f, glove, 8);
-            ArenaBuilder.Tube("Sleeve and wrist", root, assets, new[] { new Vector3(sign * 0.03f, -0.02f, 0.02f), new Vector3(sign * 0.12f, -0.18f, -0.04f), new Vector3(sign * 0.26f, -0.42f, -0.12f) }, 0.045f, 0.095f, sleeve, 12);
+            if (firstPerson) ArenaBuilder.Tube("Sleeve and wrist", root, assets, new[] { new Vector3(sign * 0.03f, -0.02f, 0.02f), new Vector3(sign * 0.12f, -0.18f, -0.04f), new Vector3(sign * 0.26f, -0.42f, -0.12f) }, 0.045f, 0.095f, sleeve, 12);
         }
     }
 }

@@ -15,7 +15,7 @@ namespace Ganryujima.UI
         private static readonly Color Gold = new Color(0.76f, 0.66f, 0.43f);
         private static Font serif;
 
-        public static void Draw(CombatModel combat, PracticeExchange practice, FaceState face, bool ready,
+        public static void Draw(CombatModel combat, ArimaOpponent opponent, FaceState face, bool ready,
             bool captured, float distance, Action enter, Action restart, string inputError, bool debug = false)
         {
             float scale = Mathf.Max(0.6f, Screen.height / 900f);
@@ -37,12 +37,12 @@ namespace Ganryujima.UI
                 GUI.Label(new Rect(59, 215, 550, 190), heading, Style(58, Paper, true));
                 Fill(new Rect(65, 419, 62, 2), Vermilion);
                 string copy = combat.Over ? $"This exchange is over.\n{combat.Parries} parries. Another chance to find your footing." :
-                    "On this shore, every exchange begins with stillness.\nApproach the post. Read its movement. Find the moment.";
+                    "On this shore, every exchange begins with stillness.\nFace Arima Kihei. Read his blade. Earn your opening.";
                 GUI.Label(new Rect(65, 448, 510, 82), copy, Style(17, Paper, true));
-                if (Button(new Rect(65, 566, 500, 52), combat.Over ? "PRACTICE AGAIN   →" : ready ? "ENTER THE COURT   →" : "PREPARING THE COURT…") && ready)
+                if (Button(new Rect(65, 566, 500, 52), combat.Over ? "DUEL AGAIN   →" : ready ? "ENTER THE COURT   →" : "PREPARING THE COURT…") && ready)
                 { if (combat.Over) restart(); else enter(); }
                 GUI.Label(new Rect(65, 654, 500, 105), "WASD  move     ·     Mouse  look / stance\nLMB  strike     ·     Hold LMB  heavy     ·     RMB  guard\n1–4  stance     ·     Space  retreat     ·     Esc  pause\nR  restart     ·     F2  field notes     ·     F1  camera diagnostics", tiny);
-                GUI.Label(new Rect(65, height - 65, 500, 30), "T H E   F I R S T   E X C H A N G E   /   P R A C T I C E", Style(10, Gold));
+                GUI.Label(new Rect(65, height - 65, 500, 30), "T H E   F I R S T   E X C H A N G E   /   A R I M A", Style(10, Gold));
                 if (!string.IsNullOrEmpty(inputError)) GUI.Label(new Rect(65, 780, 500, 60), inputError, body);
             }
             else
@@ -50,7 +50,7 @@ namespace Ganryujima.UI
                 // Small identity and a thin target meter; the environment owns the screen.
                 GUI.Label(new Rect(38, 28, 370, 40), "Ganryujima", Style(26, Ink, true));
                 GUI.Label(new Rect(40, 68, 370, 22), "T H E   F I R S T   E X C H A N G E", Style(9, Ink));
-                GUI.Label(new Rect(width / 2 - 200, 28, 400, 30), "P R A C T I C E   P O S T", new GUIStyle(Style(11, Ink)) { alignment = TextAnchor.MiddleCenter });
+                GUI.Label(new Rect(width / 2 - 200, 28, 400, 30), "A R I M A   K I H E I", new GUIStyle(Style(11, Ink)) { alignment = TextAnchor.MiddleCenter });
                 Bar(new Rect(width / 2 - 160, 63, 320, 3), combat.TargetHealth / GameConfig.MaximumHealth, Vermilion);
                 GUI.Label(new Rect(width - 230, 35, 185, 28), $"PARRIES   {combat.Parries:00}", new GUIStyle(Style(11, Ink)) { alignment = TextAnchor.MiddleRight });
                 Fill(new Rect(25, height - 143, 320, 111), new Color(0.06f, 0.10f, 0.10f, 0.79f));
@@ -65,12 +65,16 @@ namespace Ganryujima.UI
                 if (combat.Charging) Bar(new Rect(width / 2 - 110, height - 114, 220, 3), combat.ChargeProgress, Gold);
                 GUI.Label(new Rect(width - 310, height - 66, 270, 30), "F2  FIELD NOTES    /    ESC  PAUSE", new GUIStyle(tiny) { alignment = TextAnchor.MiddleRight });
                 Fill(new Rect(width / 2 - 1, height / 2 - 1, 3, 3), combat.ParryOpen ? Gold : Paper);
-                if (practice.Telling)
+                if (opponent.Telling)
                 {
                     Fill(new Rect(width / 2 - 190, height / 2 - 119, 380, 57), new Color(0.05f, 0.09f, 0.09f, 0.8f));
-                    GUI.Label(new Rect(width / 2 - 180, height / 2 - 114, 360, 35), "INCOMING  /  " + practice.Zone.ToString().ToUpperInvariant(), centered);
-                    Bar(new Rect(width / 2 - 160, height / 2 - 70, 320, 2), practice.TellProgress, Gold);
+                    GUI.Label(new Rect(width / 2 - 180, height / 2 - 114, 360, 35), "INCOMING  /  " + opponent.Zone.ToString().ToUpperInvariant(), centered);
+                    Bar(new Rect(width / 2 - 160, height / 2 - 70, 320, 2), opponent.TellProgress, Gold);
                 }
+                string tell = opponent.CounterOpen ? $"COUNTER NOW  /  {opponent.CounterRemaining:F1}s" :
+                    opponent.State == OpponentState.Feint ? "WITHDRAWAL — watch for a new zone" :
+                    opponent.State == OpponentState.Guard ? "ARIMA GUARDS  /  " + opponent.Zone.ToString().ToUpperInvariant() : "";
+                if (tell.Length > 0) GUI.Label(new Rect(width / 2 - 300, height / 2 - 112, 600, 35), tell, centered);
                 if (combat.MessageRemaining > 0)
                     GUI.Label(new Rect(width / 2 - 350, height / 2 + 110, 700, 50), combat.Message, centered);
             }
@@ -78,7 +82,7 @@ namespace Ganryujima.UI
             {
                 Fill(new Rect(width - 480, 110, 445, 235), new Color(0.06f, 0.10f, 0.10f, 0.95f));
                 GUI.Label(new Rect(width - 460, 125, 410, 205),
-                    $"FIELD NOTES / FACE INPUT\nTracking {face.tracking} · Calibrated {face.calibrated}\nComposure {face.composure:F2} · Lean {face.leanX:F1} · Gaze {face.gaze}\nLean event {face.leanTrigger} · Kiai {face.kiai} · Nod {face.nod}\nShake {face.shake} · Wink {face.wink}\n\nStance: ↑ upper / ↓ lower / ← middle / → side\nFallback: 1 upper / 2 middle / 3 lower / 4 side\nQ/E lean · F kiai · Y/N nod/shake · C composure\nZ/X/V gaze · G wink (readout only)", tiny);
+                    $"FIELD NOTES / ARIMA: {opponent.State}\nTracking {face.tracking} · Calibrated {face.calibrated}\nComposure {face.composure:F2} · Lean {face.leanX:F1} · Gaze {face.gaze}\nLean event {face.leanTrigger} · Kiai {face.kiai} · Nod {face.nod}\nShake {face.shake} · Wink {face.wink}\n\nStance: ↑ upper / ↓ lower / ← middle / → side\nFallback: 1 upper / 2 middle / 3 lower / 4 side\nQ/E lean · F kiai · Y/N nod/shake · C composure\nZ/X/V gaze · G wink (readout only)", tiny);
             }
             GUI.color = Color.white;
         }

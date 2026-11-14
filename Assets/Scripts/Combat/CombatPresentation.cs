@@ -9,12 +9,11 @@ namespace Ganryujima.Combat
     {
         private readonly CombatModel combat;
         private readonly Camera camera;
-        private readonly Transform sword, target, arm;
-        private readonly Vector3 targetOrigin;
+        private readonly Transform sword, target;
         private readonly Transform[] sparks = new Transform[GameConfig.SparkCount];
         private readonly Vector3[] velocities = new Vector3[GameConfig.SparkCount];
-        private readonly Material sparkMaterial, armMaterial;
-        private float hitStop, shake, sparkAge = float.MaxValue, kick;
+        private readonly Material sparkMaterial;
+        private float hitStop, shake, sparkAge = float.MaxValue;
         private float visualClock;
         public bool Stopped => hitStop > 0;
         public Vector3 CameraOffset { get; private set; }
@@ -22,15 +21,6 @@ namespace Ganryujima.Combat
         public CombatPresentation(CombatModel combat, Camera camera, Transform sword, Transform target)
         {
             this.combat = combat; this.camera = camera; this.sword = sword; this.target = target;
-            targetOrigin = target.position;
-            arm = new GameObject("Practice blade pivot").transform;
-            arm.SetParent(target, false);
-            arm.localPosition = new Vector3(0, 1.45f, 0);
-            armMaterial = new Material(Resources.Load<Material>("Materials/Surface")) { color = new Color(0.35f, 0.25f, 0.14f) };
-            armMaterial.SetFloat("_Glossiness", 0.16f);
-            var assets = arm.gameObject.AddComponent<GeneratedResources>();
-            var blade = ArenaBuilder.MeshObject("Curved wooden practice blade", arm, assets.Own(ArtGeometry.Blade(0.9f, 0.045f, 0.025f)), armMaterial);
-            blade.localRotation = Quaternion.Euler(-90, 0, 0);
             sparkMaterial = new Material(Resources.Load<Material>("Materials/Flat")) { color = new Color(1f, 0.74f, 0.24f) };
             var pool = new GameObject("Clash Sparks (pooled)").transform;
             for (int i = 0; i < sparks.Length; i++)
@@ -52,8 +42,7 @@ namespace Ganryujima.Combat
             if (impact == Impact.Miss) return;
             hitStop = impact == Impact.Parry ? GameConfig.ParryHitStop : impact == Impact.HeavyHit ? GameConfig.HeavyHitStop : GameConfig.HitStop;
             shake = GameConfig.ShakeDuration;
-            bool onTarget = impact == Impact.TargetHit || impact == Impact.HeavyHit;
-            if (onTarget || impact == Impact.Parry) kick = impact == Impact.Parry ? 1 : 0.45f;
+            bool onTarget = impact == Impact.TargetHit || impact == Impact.HeavyHit || impact == Impact.CounterHit;
             Vector3 point = onTarget ? target.position + Vector3.up * 1.35f : camera.transform.position + camera.transform.forward * 0.85f - camera.transform.up * 0.12f;
             if (impact == Impact.PlayerHit || impact == Impact.GuardBreak) return;
             sparkAge = 0;
@@ -66,20 +55,13 @@ namespace Ganryujima.Combat
             }
         }
 
-        public void Tick(float realDt, float gameDt, PracticeExchange practice)
+        public void Tick(float realDt, float gameDt)
         {
             hitStop = Mathf.Max(0, hitStop - realDt);
             shake = Mathf.Max(0, shake - realDt);
             visualClock += realDt;
             float amplitude = GameConfig.ShakeAmplitude * shake / GameConfig.ShakeDuration;
             CameraOffset = new Vector3(Mathf.Sin(visualClock * 97), Mathf.Cos(visualClock * 113), 0) * amplitude;
-            kick = Mathf.MoveTowards(kick, 0, gameDt * 3);
-            target.position = targetOrigin + Vector3.forward * (kick * GameConfig.PracticeRecoilDistance);
-            target.rotation = Quaternion.Euler(-kick * 12, 0, 0);
-            float tell = practice.TellProgress;
-            float zoneTilt = practice.Zone == Stance.Side ? 65 : practice.Zone == Stance.Lower ? -45 : practice.Zone == Stance.Upper ? 0 : 25;
-            arm.localRotation = Quaternion.Euler(-tell * 95, 0, zoneTilt);
-            armMaterial.color = practice.Telling ? Color.Lerp(new Color(0.5f, 0.15f, 0.1f), new Color(1, 0.7f, 0.2f), tell) : new Color(0.22f, 0.25f, 0.22f);
             PoseSword(gameDt);
             sparkAge += realDt;
             for (int i = 0; i < sparks.Length; i++)
@@ -116,11 +98,9 @@ namespace Ganryujima.Combat
 
         public void Reset()
         {
-            hitStop = shake = kick = 0;
+            hitStop = shake = 0;
             sparkAge = float.MaxValue;
             CameraOffset = Vector3.zero;
-            target.position = targetOrigin;
-            target.rotation = Quaternion.identity;
             foreach (var spark in sparks) spark.gameObject.SetActive(false);
         }
 
@@ -128,7 +108,6 @@ namespace Ganryujima.Combat
         {
             combat.Impacted -= OnImpact;
             Object.Destroy(sparkMaterial);
-            Object.Destroy(armMaterial);
         }
     }
 }
