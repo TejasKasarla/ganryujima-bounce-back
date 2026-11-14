@@ -1,6 +1,6 @@
 # Ganryujima: Bounce Back — Unity
 
-**Unity 6.3 LTS (6000.3.10f1), C#, built-in renderer. Milestones 1–5 and the requested environment art pass are complete.** A first-person duel against Arima Kihei with a procedural arena, katana, stamina, directional defense, and keyboard face mock. The original web prototype is archived in work/web-prototype. AGENTS.md contains the full brief and Unity engine override.
+**Unity 6.3 LTS (6000.3.10f1), C#, built-in renderer. Milestones 1–6 and the requested environment art pass are complete.** A first-person duel against Arima Kihei with a procedural arena, katana, stamina, directional defense, and keyboard face mock. The original web prototype is archived in work/web-prototype. AGENTS.md contains the full brief and Unity engine override.
 
 ## Open and play
 
@@ -105,7 +105,7 @@ Environment and player-weapon art are generated locally in C#. Arima uses the CC
 The editor method Ganryujima.Editor.VisualCapture.Run runs combat checks and saves actual camera renders after entering Play Mode. It accepts an optional GANRYUJIMA_CAPTURE_DIR environment variable. Camera renders exclude the HUD. The original 38 combat checks continue to pass, with no changes to Dev A's face-input files.
 ## Next milestone
 
-Milestone 6: calm-face meditation with an enso circle that completes while composed, breaks while agitated, and heals wounds. Continue one milestone per request.
+Milestone 7: remaining opponents/arenas, Kojiro's Swallow Cut, and final ending content. Cut Yoshioka before polish if needed. Continue one milestone per request.
 
 Dev A is also building the **start/title screen** and will push it separately. Dev B owns the gameplay HUD and pause flow; preserve Dev A's start-screen work when integrating incoming commits.
 
@@ -113,7 +113,7 @@ For remaining content, use suitable licensed internet assets for characters, ani
 
 ## Theme and credits
 
-The core theme is parry → bounce back → counter. Duel losses now cause wounds; calm-face meditation healing is milestone 6. Unity supplies the engine; the game combines procedural scenery with licensed imported assets. Future narrative adapts legend-adjacent Musashi accounts rather than claiming historical reconstruction; document specific historical sources as story content is added.
+The core theme is parry → bounce back → counter. Duel losses cause wounds; calm-face meditation heals them. Unity supplies the engine; the game combines procedural scenery with licensed imported assets. Future narrative adapts legend-adjacent Musashi accounts rather than claiming historical reconstruction; document specific historical sources as story content is added.
 
 ## Downloaded samurai character
 
@@ -139,10 +139,22 @@ Assets/Resources/Story/story.json is the narrative source. Its validated graph s
 
 Cutscenes use camera shots, letterbox and typewriter captions. **Space** or click reveals a line, then advances; **Esc** pauses/resumes. Focus loss pauses narrative input. Three-way choices use gaze/lean to select, nod/Enter to confirm, or **1–3/click** to choose directly. Binary choices accept nod/Y for first and shake/N for second, plus **1–2/click**. A brief entry delay rejects pulses carried from the previous scene. No tracked face or unknown gaze blocks keyboard/mouse fallbacks.
 
-Honor and Fame change through choices. A defeat adds one wound, capped at three: each removes 10 maximum stamina and 8% walking speed on subsequent duels. Rest is currently a supported narrative node that returns to the court with wounds retained; the calm-hold/enso healing activity is milestone 6. Completed duels add their parries; winning while wounded adds a comeback. Bounce Back = parries + comebacks + recoveries (recoveries stay zero until healing is implemented). The chapter summary shows all these values, wins/losses, and a new-journey button.
+Honor and Fame change through choices. A defeat adds one wound, capped at three: each removes 10 maximum stamina and 8% walking speed on subsequent duels. Rest now runs the calm-hold/enso healing activity described below; explicit early departure retains wounds. Completed duels add their parries; winning while wounded adds a comeback. Bounce Back = parries + comebacks + recoveries. The chapter summary shows all these values, wins/losses, and a new-journey button.
 
 Journey state lasts for the current Play session. It is not saved to disk. Restarting a live fight with R preserves journey stats and wounds but discards that unfinished fight's parry count. Starting a new journey resets all stats and positions. Gameplay freezes during story nodes while face.tick() continues. The previously imported samurai and arena are reused; no new art downloads are required for this milestone.
 
 Dev A start-screen integration: call the existing GameLoop component's public **BeginJourney()** once startup is ready (FramesTicked > 0). It resets and begins the chapter. The existing entry button uses the same method; no separate title screen was added.
 
-Verification: **159 deterministic assertions** (38 combat, 33 AI, 46 face, 10 finisher, 32 story), plus Unity scene checks for story-camera restore, live face ticks during narrative, choice-to-duel handoff, wounded retry settings, aftermath/ending transitions and new journey. Run Ganryujima → Check story rules, or batch method Ganryujima.Editor.StoryPlayChecks.Capture for the integration run and actual camera shots (without IMGUI caption overlays). Narrative is original legend-inspired fiction, not a verified historical account.
+Verification: **182 deterministic assertions** (38 combat, 33 AI, 46 face, 10 finisher, 33 story, 22 meditation), plus Unity scene checks for story-camera restore, live face ticks during narrative, choice-to-duel handoff, wounded retry settings, aftermath/ending transitions and new journey. Run Ganryujima → Check story rules, or batch method Ganryujima.Editor.StoryPlayChecks.Capture for the integration run and actual camera shots (without IMGUI caption overlays). Narrative is original legend-inspired fiction, not a verified historical account.
+
+## Meditation and wound healing (milestone 6)
+
+Lose Arima's duel, advance the defeat dialogue, and choose to return. The rest node now becomes a seated shoreline view with a textured ink enso. Its circle fills while composure stays at or above **0.72**; after **five calm seconds**, it heals **one wound**, adds one recovery to Bounce Back, and plays a singing-bowl cue. Intermediate composure pauses the stroke. Composure at or below **0.45** breaks it and resets progress; a short visible break interval precedes a new stroke.
+
+With the keyboard mock, release **C** to stay calm and hold **C** to break the circle. Real-camera play uses only calibrated/tracked IFaceInput composure. Missing, uncalibrated or invalid signals reset held progress and cannot heal. **F1** provides Dev A's calibration/preview; no face-provider code was changed. **Esc** pauses/resumes, including circle and audio. Face ticks continue during the scene. Each meditation visit can heal one wound, even if several remain; completion cannot be repeated to farm recoveries.
+
+After completion, **Space** or the return button resumes the duel with the healed wound's stamina/speed penalties removed. **Backspace** or Return with wound explicitly leaves early without healing. Ordinary Space/Continue cannot bypass the healing gate. A new story node resets the meditation activity and hides the circle. Recovery counts persist within the journey and reset with a new journey.
+
+The circle is a shader-driven UI visualization; the shore and imported samurai assets are reused. SFXMint's CC0 Singing Bowl Temple Bell 01 provides the completion audio. Its source URL, hash, license and AI-origin disclosure are retained in Resources/Audio/Meditation. All assets are local at runtime.
+
+Validation: 182 rule assertions plus Ganryujima.Editor.MeditationPlayChecks.Capture exercised the actual enso shader, broken/completed states, audio asset import, healing stats, camera/duel restoration and continuing face ticks. Camera renders were inspected at half, broken and full progress; IMGUI captions are not included in those renders. Live physical-webcam accuracy remains hardware-dependent and was not retuned here. Run Ganryujima → Check meditation rules for the focused checks.

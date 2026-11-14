@@ -35,7 +35,8 @@ namespace Ganryujima.Editor
             story.Reset(); Duel(); story.ResolveDuel(false,2);
             Check(story.Stats.Wounds==1 && story.Stats.Losses==1 && story.Current.id=="fallen","Defeat continues with wound");
             Continue(); story.Choose(0); Check(story.Current.kind=="meditation","Return path supports meditation node");
-            Continue(); Check(story.Current.kind=="duel" && story.Stats.Wounds==1,"Rest returns to duel without premature milestone-6 healing");
+            Check(!story.Continue(),"Rest cannot bypass healing through ordinary continue");
+            story.LeaveMeditation(); Check(story.Current.kind=="duel" && story.Stats.Wounds==1,"Explicit departure preserves wound");
             var combat=new CombatModel(); combat.Reset(story.Stats.Wounds);
             Check(combat.StaminaLimit==90 && combat.Stamina==90 && combat.MovementScale<1,"Wound reduces combat stamina and speed");
             combat.BeginGuard(); combat.ReceiveStrike(combat.Stance,2,0);
@@ -47,7 +48,7 @@ namespace Ganryujima.Editor
             Check(story.Current.id=="road_end" && story.Stats.Wounds==1,"Walking away ends chapter with wound retained");
             story.Reset(); Check(story.Stats.Wounds==0 && story.Stats.BounceBack==0 && story.Stats.Honor==0,"New journey resets session stats");
             Duel();
-            for(int i=0;i<5;i++) { story.ResolveDuel(false,0); Continue(); story.Choose(0); Continue(); }
+            for(int i=0;i<5;i++) { story.ResolveDuel(false,0); Continue(); story.Choose(0); story.LeaveMeditation(); }
             Check(story.Stats.Wounds==GameConfig.MaximumWounds,"Repeated losses clamp wounds");
             var input=new StoryChoiceInput(); story.Reset(); Continue(); input.Reset(3);
             var face=new FaceState { tracking=true,calibrated=true,gaze=Gaze.center,nod=true };

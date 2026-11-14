@@ -125,5 +125,10 @@ namespace Ganryujima.Core
         public const float StoryCharactersPerSecond = 38f;
         public const float StoryChoiceDelay = 0.4f;
         public const float StoryCameraBlend = 1.2f;
+        public const float MeditationHoldSeconds = 5f;
+        public const float MeditationCalmThreshold = 0.72f;
+        public const float MeditationBreakThreshold = 0.45f;
+        public const float MeditationBreakFlash = 0.65f;
+        public const float MeditationBellVolume = 0.45f;
     }
 }

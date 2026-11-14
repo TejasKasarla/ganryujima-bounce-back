@@ -29,6 +29,9 @@ namespace Ganryujima.Core
         private StoryModel story;
         private StoryChoiceInput storyInput;
         private StoryCamera storyCamera;
+        private MeditationModel meditation;
+        private MeditationScene meditationScene;
+        public MeditationModel Meditation => meditation;
         private bool journeyStarted,storyPaused;
         public StoryModel Story => story;
         public bool JourneyStarted => journeyStarted;
@@ -80,6 +83,7 @@ namespace Ganryujima.Core
             var graph=JsonUtility.FromJson<StoryGraph>(Resources.Load<TextAsset>("Story/story").text);
             story=new StoryModel(graph); storyInput=new StoryChoiceInput();
             storyCamera=new StoryCamera(view,target,sword);
+            meditation=new MeditationModel(); meditationScene=new MeditationScene(view);
             story.Changed+=OnStoryNode;
             face = FaceInputFactory.createFaceInput();
             try { await face.start(); }
@@ -118,6 +122,12 @@ namespace Ganryujima.Core
                 if(Application.isFocused && KeyInput.GetKeyDown(KeyCode.Escape)) storyPaused=!storyPaused;
                 story.Tick(Mathf.Min(Time.unscaledDeltaTime,GameConfig.MaximumDelta),storyPaused);
                 storyCamera.Tick(story.Age);
+                if(story.Current.kind=="meditation")
+                {
+                    meditation.Tick(Mathf.Min(Time.unscaledDeltaTime,GameConfig.MaximumDelta),state,storyPaused || story.Age<GameConfig.StoryCameraBlend);
+                    if(meditation.CompletedThisTick && story.CompleteMeditation(meditation)) meditationScene.Complete();
+                    meditationScene.Tick(meditation,storyPaused);
+                }
                 if(!storyPaused)
                 {
                     if(story.Current.kind=="choice")
@@ -129,6 +139,7 @@ namespace Ganryujima.Core
                         int selection=storyInput.Read(story.Current,story.Age,state,number,KeyInput.GetKeyDown(KeyCode.Return));
                         if(selection>=0) story.Choose(selection);
                     }
+                    else if(story.Current.kind=="meditation" && KeyInput.GetKeyDown(KeyCode.Backspace)) story.LeaveMeditation();
                     else if(KeyInput.GetKeyDown(KeyCode.Space)) story.Continue();
                 }
                 return;
@@ -227,6 +238,8 @@ namespace Ganryujima.Core
         private void OnStoryNode(StoryNode node)
         {
             storyPaused=false;
+            meditation.Reset(); meditationScene.Show(node.kind=="meditation");
+            atmosphere.SetComposure(GameConfig.NeutralComposure);
             if(node.kind=="duel") { storyCamera.Restore(); Restart(); }
             else
             {
@@ -282,7 +295,7 @@ namespace Ganryujima.Core
                 if(journeyStarted && story.Current.kind!="duel")
                 {
                     StoryHud.Draw(story,storyInput,storyPaused,()=> { if(!storyPaused) story.Continue(); },
-                        index=> { if(!storyPaused) story.Choose(index); },BeginJourney);
+                        index=> { if(!storyPaused) story.Choose(index); },BeginJourney,meditation,()=> { if(!storyPaused) story.LeaveMeditation(); });
                     return;
                 }
                 CombatHud.Draw(combat, opponent, state, ready, Captured, Distance, Enter, Restart, inputError, debugHud, faceGameplay);

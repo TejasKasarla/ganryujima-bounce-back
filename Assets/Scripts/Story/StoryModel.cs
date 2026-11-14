@@ -72,12 +72,13 @@ namespace Ganryujima.Story
         public float Age { get; private set; }
         public int RevealedCharacters { get; private set; }
         public bool TextComplete => RevealedCharacters >= (Current.text??"").Length;
+        public bool MeditationComplete { get; private set; }
         public event Action<StoryNode> Changed;
         public StoryModel(StoryGraph graph) { this.graph=graph; nodes=graph.Validate(); Reset(); }
         public void Reset() { Stats=new JourneyStats(); Enter(graph.start); }
         private void Enter(string id)
         {
-            Current=nodes[id]; Age=0; RevealedCharacters=0;
+            Current=nodes[id]; Age=0; RevealedCharacters=0; MeditationComplete=false;
             Stats.Apply(Current.effect);
             Changed?.Invoke(Current);
         }
@@ -90,8 +91,23 @@ namespace Ganryujima.Story
         public bool Continue()
         {
             if(Current.kind!="cutscene" && Current.kind!="meditation") return false;
+            if(Current.kind=="meditation" && !MeditationComplete) return false;
             if(!TextComplete) { RevealedCharacters=(Current.text??"").Length; Age=Mathf.Max(Age,RevealedCharacters/GameConfig.StoryCharactersPerSecond); return false; }
             Enter(Current.next); return true;
+        }
+        public bool CompleteMeditation(MeditationModel activity)
+        {
+            if(Current.kind!="meditation" || MeditationComplete || activity==null || !activity.Completed) return false;
+            MeditationComplete=true;
+            Stats.Apply(new StoryEffect { wounds=-1 });
+            RevealedCharacters=(Current.text??"").Length;
+            Age=Mathf.Max(Age,RevealedCharacters/GameConfig.StoryCharactersPerSecond);
+            return true;
+        }
+        public bool LeaveMeditation()
+        {
+            if(Current.kind!="meditation") return false;
+            Enter(Current.next); return true; // Explicit departure grants no healing.
         }
         public bool Choose(int index)
         {

@@ -50,7 +50,7 @@ namespace Ganryujima.Editor
             Continue(); game.Story.Choose(2); Continue();
             Assert(game.Story.Current.kind=="duel" && game.Combat.Health==100 && game.Combat.Wounds==0,"Duel handoff did not reset combat");
             Assert(camera.transform.localPosition==Vector3.up*GameConfig.EyeHeight && camera.fieldOfView==GameConfig.FieldOfView,"Narrative did not restore first-person camera");
-            game.Story.ResolveDuel(false,2); Continue(); game.Story.Choose(0); Continue();
+            game.Story.ResolveDuel(false,2); Continue(); game.Story.Choose(0); game.Story.LeaveMeditation();
             Assert(game.Story.Current.kind=="duel" && game.Combat.Wounds==1 && game.Combat.StaminaLimit==90,"Wounded story retry did not configure actual combat model");
             for(int i=0;i<3;i++) { game.Combat.BeginCharge(); game.Combat.Tick(.56f,2,0); game.Combat.ReleaseStrike(); game.Combat.Tick(.9f,2,0); }
             // The wounded maximum can require breathing before the final heavy.

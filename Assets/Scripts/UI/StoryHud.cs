@@ -8,7 +8,8 @@ namespace Ganryujima.UI
     public static class StoryHud
     {
         private static readonly Color Paper=new Color(.94f,.9f,.79f),Gold=new Color(.78f,.65f,.41f);
-        public static void Draw(StoryModel story,StoryChoiceInput input,bool paused,Action advance,Action<int> choose,Action newJourney)
+        public static void Draw(StoryModel story,StoryChoiceInput input,bool paused,Action advance,Action<int> choose,Action newJourney,
+            MeditationModel meditation=null,Action leaveMeditation=null)
         {
             float scale=Mathf.Max(.4f,Mathf.Min(Screen.width/1280f,Screen.height/720f));
             GUI.matrix=Matrix4x4.Scale(Vector3.one*scale);
@@ -24,7 +25,22 @@ namespace Ganryujima.UI
                 Label(new Rect(42,h-210,w-84,50),"PAUSED — press Esc to continue",24,Paper); return;
             }
             float x=42,y=h-231,width=w-84;
-            if(node.kind=="choice")
+            if(node.kind=="meditation" && meditation!=null)
+            {
+                Label(new Rect(x,y,width,35),meditation.Status,20,meditation.BrokenRemaining>0?new Color(.87f,.45f,.32f):Gold);
+                string guidance=meditation.Completed ? $"One quiet circle. Wounds remaining: {stats.Wounds}. Recoveries: {stats.Recoveries}." :
+                    !meditation.SignalReady ? "Find your face in F1 and finish calibration. Healing waits for a clear signal." :
+                    $"Keep composure at {GameConfig.MeditationCalmThreshold:P0} or higher. Relax your mouth and brow. {meditation.CalmSeconds:F1} / {GameConfig.MeditationHoldSeconds:F0} seconds.";
+                Label(new Rect(x,y+40,width,46),guidance,17,Paper);
+                Label(new Rect(x,y+90,width,38),$"COMPOSURE {meditation.Composure:P0}   ·   CIRCLE {meditation.Progress:P0}   ·   Keyboard mock: release C to calm / hold C to agitate",13,Gold);
+                if(meditation.Completed)
+                {
+                    if(GUI.Button(new Rect(x,y+145,390,40),"SPACE / RETURN TO THE COURT",ButtonStyle())) advance();
+                }
+                else if(GUI.Button(new Rect(x,y+145,390,40),"BACKSPACE / RETURN WITH WOUND",ButtonStyle()) && story.Age>=GameConfig.StoryChoiceDelay) leaveMeditation?.Invoke();
+                Label(new Rect(x+420,y+148,width-420,45),"Agitation breaks the circle. A steady face begins a fresh stroke.",13,Paper);
+            }
+            else if(node.kind=="choice")
             {
                 Label(new Rect(x,y,width,50),node.text,18,Paper);
                 int count=node.choices.Length;

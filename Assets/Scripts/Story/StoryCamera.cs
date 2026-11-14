@@ -28,6 +28,7 @@ namespace Ganryujima.Story
                 shotPosition=target.position+target.forward*3.2f+target.right*1.1f+Vector3.up*1.55f;
                 lookAt=target.position+Vector3.up*1.1f;
             }
+            else if(node.kind=="meditation") { shotPosition=new Vector3(18,1.1f,8); lookAt=new Vector3(55,.2f,45); }
             else if(node.shot=="shore") { shotPosition=new Vector3(7,1.8f,1); lookAt=new Vector3(45,.5f,40); }
             else { shotPosition=new Vector3(-4,2.3f,-6); lookAt=target.position+Vector3.up*.9f; }
             shotRotation=Quaternion.LookRotation(lookAt-shotPosition);
