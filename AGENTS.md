@@ -4,8 +4,10 @@ The user explicitly changed the engine to **Unity/C#**. These instructions take 
 
 - Engine: Unity 6.3 LTS, installed editor 6000.3.10f1. Built-in 3D renderer, procedural environment plus licensed downloaded character art (explicitly requested by the user). Desktop keyboard/mouse prototype.
 - Project root contains Assets/, Packages/, ProjectSettings/. Open this folder with Unity Hub.
-- Dev B owns Assets/Scripts/Core, World, and future gameplay/story/UI/audio folders plus Assets/Editor.
-- Dev A owns Assets/Scripts/Input/Face. Dev A's shared C# contract, real local MediaPipe bridge, and mock fallback are now integrated. Do not implement webcam tracking or edit their files here.
+- Dev B owns Assets/Scripts/Core, World, and gameplay/story/HUD/pause/audio work plus Assets/Editor, except Dev A's start-screen work below.
+- Dev A owns Assets/Scripts/Input/Face AND the start/title screen. The user says Dev A is currently building the start screen and will push it to GitHub later. Do not build a competing start screen or overwrite Dev A's screen assets/scripts. Its paths are not yet known: inspect the incoming commit before integration, preserve its design, and make only the gameplay handoff changes needed. Dev A's shared C# contract, real local MediaPipe bridge, and mock fallback are already integrated. Do not implement webcam tracking or edit their face-input files here.
+- For the rest of the game, use suitable internet-sourced assets: characters, animation, environment models, textures, effects, audio, and UI art as applicable. This explicit user direction overrides the original procedural-only/no-external-assets brief. Choose assets that improve the requested realistic samurai look while retaining the ink-wash art direction; do not default to primitive stand-ins for finished content. Check each asset's license and retain source URLs, attribution, license text, and origin disclosures with imported files. Keep imports compatible with Unity's built-in renderer and account for performance.
+- Before integration or publishing, fetch the shared GitHub branch and inspect Dev A's incoming changes. Their start-screen push is pending, not a blocker for independent gameplay work. Continue one milestone per request.
 - Consume face input ONLY through IFaceInput from FaceInputFactory.createFaceInput(). Preserve the brief's camelCase field names, ranges, method names, and one-frame event semantics in C#. Call face.tick() at the start of every game Update, then getState().
 - Game tuning: Assets/Scripts/Core/GameConfig.cs. DEBUG_INPUT remains true by default. Dev A's provider/fallback and camera override are integrated; consult their README for setup. F1 is owned by face diagnostics; Dev B field notes use F2.
 - Use Unity's built-in legacy Input for this dependency-free scaffold. A later intentional Input System migration should preserve controls and the face boundary.
@@ -19,7 +21,7 @@ The user explicitly changed the engine to **Unity/C#**. These instructions take 
 5. JSON narrative state machine, Honor/Fame/wounds/tally, cutscenes and choices.
 6. Composure meditation and enso healing.
 7. Content: Arima, Yoshioka, Kojiro, arenas and endings. Cut Yoshioka first if necessary.
-8. Ink/paper postprocessing, procedural audio, title/pause menus, polish.
+8. Ink/paper postprocessing, sourced/procedural audio, pause menu, polish; integrate Dev A's title/start screen.
 
 ## Original design brief (reference; engine/path references overridden above)
 # PROJECT BRIEF: "Ganryujima: Bounce Back"

@@ -95,11 +95,15 @@ Environment and player-weapon art are generated locally in C#. Arima uses the CC
 The editor method Ganryujima.Editor.VisualCapture.Run runs combat checks and saves actual camera renders after entering Play Mode. It accepts an optional GANRYUJIMA_CAPTURE_DIR environment variable. Camera renders exclude the HUD. The original 38 combat checks continue to pass, with no changes to Dev A's face-input files.
 ## Next milestone
 
-Milestone 3: Arima's opponent FSM, zone attacks, wind-up tells, feints, recoil/stagger, and parry → recoil → counter window. Continue one milestone per request.
+Milestone 4: face-driven dodge, kiai, composure effects, and gaze tells through IFaceInput. Continue one milestone per request.
+
+Dev A is also building the **start/title screen** and will push it separately. Dev B owns the gameplay HUD and pause flow; preserve Dev A's start-screen work when integrating incoming commits.
+
+For remaining content, use suitable licensed internet assets for characters, animations, environments, textures, effects, audio, and UI art. Preserve the realistic samurai / ink-wash direction and keep source, license, credit, and origin records alongside each import. The original procedural-only restriction is superseded by the user's direction.
 
 ## Theme and credits
 
-The core theme is parry → bounce back → counter. Future duel losses cause wounds healed by composure meditation. Unity supplies the engine; all geometry is procedural. Future narrative adapts legend-adjacent Musashi accounts rather than claiming historical reconstruction; document specific historical sources as story content is added.
+The core theme is parry → bounce back → counter. Future duel losses cause wounds healed by composure meditation. Unity supplies the engine; the game combines procedural scenery with licensed imported assets. Future narrative adapts legend-adjacent Musashi accounts rather than claiming historical reconstruction; document specific historical sources as story content is added.
 
 ## Downloaded samurai character
 
