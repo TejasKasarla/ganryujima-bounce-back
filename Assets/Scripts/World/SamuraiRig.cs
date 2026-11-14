@@ -81,10 +81,33 @@ namespace Ganryujima.World
             sword.localRotation = swordRotation;
             Arm("Right", sword.TransformPoint(new Vector3(0,.04f,0)), 1);
             Arm("Left", sword.TransformPoint(new Vector3(0,-.09f,0)), -1);
+            CurlFingers();
+        }
+
+        private void CurlFingers()
+        {
             foreach (string side in new[] { "Left", "Right" })
                 foreach (string finger in new[] { "Index", "Middle", "Ring", "Pinky" })
                     for (int joint=1;joint<=3;joint++)
                         bones[side+"Hand"+finger+joint].localRotation *= Quaternion.Euler(-45,0,0);
+        }
+
+        public void PoseFinisher(float fall)
+        {
+            Walk.SampleAnimation(Model,0);
+            Model.transform.localPosition=modelOrigin; Model.transform.localRotation=Quaternion.identity;
+            Transform hips=bones["Hips"];
+            hips.position-=transform.up*(fall*.53f);
+            hips.rotation=Quaternion.AngleAxis(fall*24,transform.right)*hips.rotation;
+            PlantFoot("Left",new Vector3(-.17f,.10f,.12f));
+            PlantFoot("Right",new Vector3(.17f,.10f,-.22f));
+            bones["Head"].rotation=Quaternion.AngleAxis(fall*18,transform.right)*bones["Head"].rotation;
+            sword.localPosition=new Vector3(.32f,Mathf.Lerp(1.05f,.40f,fall),.35f);
+            sword.localRotation=Quaternion.Euler(65,20,-70);
+            sword.gameObject.SetActive(true);
+            Arm("Right",sword.TransformPoint(new Vector3(0,.04f,0)),1);
+            Arm("Left",sword.TransformPoint(new Vector3(0,-.09f,0)),-1);
+            CurlFingers();
         }
 
         private void PlantFoot(string side, Vector3 localTarget)

@@ -46,6 +46,8 @@ namespace Ganryujima.Combat
             combat.Impacted += OnImpact;
         }
 
+        public void FinisherImpact() => OnImpact(Impact.HeavyHit);
+
         private void OnImpact(Impact impact)
         {
             if (impact == Impact.Miss || impact == Impact.Dodge || impact == Impact.Evade) return;

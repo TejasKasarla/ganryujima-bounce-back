@@ -114,5 +114,10 @@ namespace Ganryujima.Core
         public const float LeanCameraOffset = 0.10f;
         public const float LeanCameraRoll = 3f;
         public const float LeanSmoothing = 10f;
+        public const float FinisherDuration = 3.8f;
+        public const float FinisherCutAt = 1.05f;
+        public const float FinisherCutDuration = 0.20f;
+        public const float FinisherImpactAt = 1.17f;
+        public const float FinisherVolume = 0.65f;
     }
 }

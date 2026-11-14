@@ -23,6 +23,8 @@ namespace Ganryujima.Core
         private CombatPresentation presentation;
         private FaceGameplay faceGameplay;
         private InkAtmosphere atmosphere;
+        private FinishingBlow finisher;
+        public FinishingBlow Finisher => finisher;
         public FaceGameplay FaceGameplay => faceGameplay;
         private bool ready, entered, debugHud;
         private float yaw, pitch, verticalVelocity;
@@ -67,6 +69,7 @@ namespace Ganryujima.Core
             faceGameplay = new FaceGameplay(combat, opponent);
             opponentArt.Tick(opponent, 1);
             presentation = new CombatPresentation(combat, view, sword, target);
+            finisher = new FinishingBlow(view,sword,target,presentation);
             face = FaceInputFactory.createFaceInput();
             try { await face.start(); }
             catch (Exception error) { inputError = "Face provider failed: " + error.Message; Debug.LogException(error); }
@@ -79,10 +82,20 @@ namespace Ganryujima.Core
         {
             // Unity cannot serialize interface/model instances across a script reload in Play Mode.
             // Keep a stale session quiet until Play is restarted rather than spamming exceptions.
-            if (!ready || face == null || combat == null || opponent == null || presentation == null || faceGameplay == null) return;
+            if (!ready || face == null || combat == null || opponent == null || presentation == null || faceGameplay == null || finisher == null) return;
             face.tick(); // First gameplay action, once per frame, including paused/released frames.
             state = face.getState();
             FramesTicked++;
+            if (finisher.Active)
+            {
+                faceGameplay.Observe(state,false);
+                if (KeyInput.GetKeyDown(KeyCode.Escape)) finisher.TogglePause();
+                bool focused=Application.isFocused;
+                if (!focused && !finisher.Paused) finisher.TogglePause();
+                finisher.Tick(Mathf.Min(Time.unscaledDeltaTime,GameConfig.MaximumDelta),focused && KeyInput.GetKeyDown(KeyCode.Space));
+                if (!finisher.Active) SetCapture(false);
+                return;
+            }
             if (KeyInput.GetKeyDown(KeyCode.F2)) debugHud = !debugHud; // F1 belongs to Dev A's camera diagnostics.
             if (KeyInput.GetKeyDown(KeyCode.Escape)) SetCapture(false);
             if (KeyInput.GetKeyDown(KeyCode.R)) Restart();
@@ -100,6 +113,7 @@ namespace Ganryujima.Core
                 combat.Tick(dt, Distance, AimAngle);
                 opponent.Tick(dt, new Vector2(player.transform.position.x, player.transform.position.z), AimAngle);
                 opponentArt.Tick(opponent, dt);
+                if (finisher.TryBegin(combat)) { SetCapture(false); return; }
             }
             presentation.Tick(realDt, dt);
             view.transform.localPosition = Vector3.up * GameConfig.EyeHeight + presentation.CameraOffset + Vector3.right * (faceGameplay.Lean * GameConfig.LeanCameraOffset);
@@ -165,6 +179,7 @@ namespace Ganryujima.Core
         private void Restart()
         {
             if (!ready) return;
+            finisher.Reset();
             combat.Reset(); opponent.Reset(); opponentArt.Tick(opponent, 1); presentation.Reset();
             faceGameplay.Reset();
             player.enabled = false;
@@ -189,7 +204,7 @@ namespace Ganryujima.Core
         private void OnDestroy() { face?.stop(); faceGameplay?.Dispose(); opponent?.Dispose(); presentation?.Dispose(); }
         private void OnGUI()
         {
-            if (ready && (face == null || combat == null || presentation == null || faceGameplay == null))
+            if (ready && (face == null || combat == null || presentation == null || faceGameplay == null || finisher == null))
             {
                 GUI.Box(new Rect(25, 25, 590, 60), "Scripts changed during Play. Stop Play, then press Play again to reload the court.");
                 return;
@@ -200,6 +215,7 @@ namespace Ganryujima.Core
             try
             {
                 GUI.depth = 10; // Keep Dev A's corner webcam overlay above the gameplay/entry panels.
+                if (finisher != null && finisher.Active) { FinisherHud.Draw(finisher); return; }
                 CombatHud.Draw(combat, opponent, state, ready, Captured, Distance, Enter, Restart, inputError, debugHud, faceGameplay);
             }
             finally { GUI.matrix = previousMatrix; GUI.color = previousColor; GUI.depth = previousDepth; }

@@ -61,7 +61,7 @@ namespace Ganryujima.Editor
             }
         }
 
-        private static void Save(Camera camera, string path)
+        public static void Save(Camera camera, string path)
         {
             var output = new RenderTexture(1600, 900, 24, RenderTextureFormat.ARGB32) { antiAliasing = 4 };
             output.Create();

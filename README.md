@@ -124,3 +124,11 @@ The imported character has 295,015 triangles, 54 skin bones, and 2048px color/no
 Validation: 71 combat/AI checks, actual Unity camera renders of idle, walk, windup and parry-counter poses. The dense model is currently intended for this single-opponent scene; a 60 FPS target has not yet been benchmarked on the user's laptop. No face-input implementation was changed.
 
 Milestone 4 validation uses synthetic contract snapshots plus the keyboard mock startup; live webcam gesture accuracy was not tested. The rendered integration check exercises actual CharacterController dodge movement, kiai stagger/shockwave, and the composure shader.
+
+## Finishing-blow cutscene
+
+Defeating Arima automatically plays a 3.8-second first-person sequence: letterbox, deliberate wind-up, camera push, finishing cut, impact flash/sparks and sword sound, followed by his kneeling defeat pose and the victory screen. It fires once per duel. Space skips; Esc pauses/resumes. Losing application focus pauses it. R restarts after the result, restoring both fighters and clearing the cinematic. Face input keeps ticking while cinematic gameplay actions are suppressed. Unity global timeScale stays unchanged.
+
+The existing CC0 imported samurai is posed on its skeleton. This is a directed procedural animation, not a downloaded execution/mocap clip. The sword sound is SFXMint's CC0 “Sharp Sword Slash With Metal Ring 03”; source, license and AI/procedural origin disclosure are retained in Resources/Audio/Finisher. No added runtime network dependency.
+
+Finisher checks cover victory-only activation, one-shot trigger, pause, single impact cue, natural completion, skip, retry and unchanged damage. The editor method Ganryujima.Editor.FinisherChecks.Capture exercises the actual imported rig, camera restore, sound import and continuing face ticks, and saves camera renders. Camera renders exclude the in-game letterbox/caption overlay.

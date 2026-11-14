@@ -33,7 +33,7 @@ namespace Ganryujima.UI
                 GUI.Label(new Rect(74, 75, 28, 30), "一", Style(24, Paper, true));
                 GUI.Label(new Rect(115, 81, 460, 25), "G A N R Y U J I M A", body);
                 GUI.Label(new Rect(65, 146, 520, 28), "B O U N C E   B A C K", Style(11, Gold));
-                string heading = combat.Over ? (combat.Health <= 0 ? "Rise.\nBegin again." : "An opening.\nA way forward.") : "Steel. Silence.\nA second chance.";
+                string heading = combat.Over ? (combat.Health <= 0 ? "Rise.\nBegin again." : "Victory.\nThe duel is over.") : "Steel. Silence.\nA second chance.";
                 GUI.Label(new Rect(59, 215, 550, 190), heading, Style(58, Paper, true));
                 Fill(new Rect(65, 419, 62, 2), Vermilion);
                 string copy = combat.Over ? $"This exchange is over.\n{combat.Parries} parries. Another chance to find your footing." :
