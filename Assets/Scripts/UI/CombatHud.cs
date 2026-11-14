@@ -47,11 +47,18 @@ namespace Ganryujima.UI
             }
             else
             {
-                // Small identity and a thin target meter; the environment owns the screen.
+                // Shared boss panel: the same readable name and vitality scale in every encounter.
                 GUI.Label(new Rect(38, 28, 370, 40), "Ganryujima", Style(26, Ink, true));
                 GUI.Label(new Rect(40, 68, 370, 22), (opponent.Id==OpponentId.Arima?"THE FIRST EXCHANGE":opponent.Id==OpponentId.Yoshioka?"THE KYOTO CHALLENGE":"GANRYUJIMA / THE FINAL DUEL"), Style(9, Ink));
-                GUI.Label(new Rect(width / 2 - 200, 28, 400, 30), opponent.Name.ToUpperInvariant(), new GUIStyle(Style(11, Ink)) { alignment = TextAnchor.MiddleCenter });
-                Bar(new Rect(width / 2 - 160, 63, 320, 3), combat.TargetHealth / combat.TargetHealthLimit, Vermilion);
+                float bossWidth=Mathf.Min(640,width-70), bossLeft=(width-bossWidth)*.5f;
+                float bossTop=width<1200?100:22;
+                Fill(new Rect(bossLeft-16,bossTop,bossWidth+32,116),new Color(.035f,.065f,.065f,.88f));
+                GUI.Label(new Rect(bossLeft,bossTop+7,bossWidth,42),opponent.Name.ToUpperInvariant(),
+                    new GUIStyle(Style(26,Paper,true)) { alignment=TextAnchor.MiddleCenter });
+                Fill(new Rect(bossLeft-2,bossTop+57,bossWidth+4,20),Gold);
+                Bar(new Rect(bossLeft,bossTop+59,bossWidth,16),combat.TargetHealth/combat.TargetHealthLimit,Vermilion);
+                GUI.Label(new Rect(bossLeft,bossTop+82,bossWidth,25),$"VITALITY   {Mathf.CeilToInt(combat.TargetHealth)} / {combat.TargetHealthLimit:F0}",
+                    new GUIStyle(Style(14,Paper)) { alignment=TextAnchor.MiddleCenter });
                 GUI.Label(new Rect(width - 230, 35, 185, 28), $"PARRIES   {combat.Parries:00}", new GUIStyle(Style(11, Ink)) { alignment = TextAnchor.MiddleRight });
                 Fill(new Rect(25, height - 143, 320, 111), new Color(0.06f, 0.10f, 0.10f, 0.79f));
                 GUI.Label(new Rect(42, height - 132, 270, 25), "VITALITY", tiny);

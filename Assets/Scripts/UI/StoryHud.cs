@@ -56,7 +56,7 @@ namespace Ganryujima.UI
             else if(node.kind=="ending")
             {
                 Label(new Rect(x,y,width,70),node.text,19,Paper);
-                Label(new Rect(x,y+78,width,42),$"{stats.Wins} wins  ·  {stats.Losses} losses  ·  {stats.Parries} parries  ·  {stats.Comebacks} comebacks  ·  {stats.Recoveries} recoveries",15,Gold);
+                Label(new Rect(x,y+78,width,48),$"{stats.Wins} wins  ·  {stats.Losses} losses\nBOUNCE BACK {stats.BounceBack} = {stats.Parries} parries + {stats.Recoveries} wounds healed + {stats.Comebacks} wins while wounded",15,Gold);
                 Fill(new Rect(x,y+135,300,48),new Color(.48f,.19f,.12f));
                 if(GUI.Button(new Rect(x,y+135,300,48),"BEGIN A NEW JOURNEY",ButtonStyle())) newJourney();
                 Label(new Rect(x+325,y+139,width-325,50),"A legend-inspired story, not a historical reconstruction.",12,Gold);
