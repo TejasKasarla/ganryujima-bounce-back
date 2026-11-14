@@ -196,8 +196,13 @@ namespace Ganryujima.Core
             }
             Matrix4x4 previousMatrix = GUI.matrix;
             Color previousColor = GUI.color;
-            try { CombatHud.Draw(combat, opponent, state, ready, Captured, Distance, Enter, Restart, inputError, debugHud, faceGameplay); }
-            finally { GUI.matrix = previousMatrix; GUI.color = previousColor; }
+            int previousDepth = GUI.depth;
+            try
+            {
+                GUI.depth = 10; // Keep Dev A's corner webcam overlay above the gameplay/entry panels.
+                CombatHud.Draw(combat, opponent, state, ready, Captured, Distance, Enter, Restart, inputError, debugHud, faceGameplay);
+            }
+            finally { GUI.matrix = previousMatrix; GUI.color = previousColor; GUI.depth = previousDepth; }
         }
     }
 }
