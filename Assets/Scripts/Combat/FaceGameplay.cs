@@ -40,7 +40,7 @@ namespace Ganryujima.Combat
                 return;
             }
             if (snapshot.leanTrigger == -1 || snapshot.leanTrigger == 1)
-            { pendingDodge = snapshot.leanTrigger; dodgeBuffer = GameConfig.GestureBuffer; }
+            { pendingDodge = snapshot.leanTrigger * GameConfig.LeanDirection; dodgeBuffer = GameConfig.GestureBuffer; }
             if (snapshot.kiai) { pendingKiai = true; kiaiBuffer = GameConfig.GestureBuffer; }
         }
 
@@ -55,7 +55,7 @@ namespace Ganryujima.Combat
             bool focusing = HasSignal && state.gaze == Gaze.center && distance <= GameConfig.GazeFocusRange && aimAngle <= GameConfig.GazeFocusAngle;
             focusTime = focusing ? Mathf.Min(GameConfig.GazeFocusDuration, focusTime + realDt) : 0;
             float target = HasSignal && !float.IsNaN(state.leanX) && !float.IsInfinity(state.leanX) ? Mathf.Clamp(state.leanX,-1,1) : 0;
-            Lean = Mathf.Lerp(Lean, target, 1 - Mathf.Exp(-GameConfig.LeanSmoothing * realDt));
+            Lean = Mathf.Lerp(Lean, target * GameConfig.LeanDirection, 1 - Mathf.Exp(-GameConfig.LeanSmoothing * realDt));
         }
 
         public void ApplyGestures(bool canAct, float distance, float aimAngle)

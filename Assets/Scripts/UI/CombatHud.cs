@@ -30,19 +30,11 @@ namespace Ganryujima.UI
                 // Leave the right two thirds of the court visible through the entry composition.
                 Fill(new Rect(0, 0, 650, height), new Color(0.075f, 0.105f, 0.10f, 0.94f));
                 Fill(new Rect(65, 74, 34, 34), Vermilion);
-                GUI.Label(new Rect(74, 75, 28, 30), "一", Style(24, Paper, true));
-                GUI.Label(new Rect(115, 81, 460, 25), "G A N R Y U J I M A", body);
-                GUI.Label(new Rect(65, 146, 520, 28), "B O U N C E   B A C K", Style(11, Gold));
-                string heading = combat.Over ? (combat.Health <= 0 ? "Rise.\nBegin again." : "Victory.\nThe duel is over.") : "Steel. Silence.\nA second chance.";
-                GUI.Label(new Rect(59, 215, 550, 190), heading, Style(58, Paper, true));
-                Fill(new Rect(65, 419, 62, 2), Vermilion);
-                string copy = combat.Over ? $"This exchange is over.\n{combat.Parries} parries. Another chance to find your footing." :
-                     $"On this shore, every exchange begins with stillness.\nFace {opponent.Name}. Read his blade. Earn your opening.";
-                GUI.Label(new Rect(65, 448, 510, 82), copy, Style(17, Paper, true));
+                GUI.Label(new Rect(65, 145, 540, 72), "Ganryujima", Style(54, Paper, true));
+                GUI.Label(new Rect(65, 225, 520, 35), "B O U N C E   B A C K", Style(18, Gold));
                 if (Button(new Rect(65, 566, 500, 52), combat.Over ? "DUEL AGAIN   →" : ready ? "ENTER THE COURT   →" : "PREPARING THE COURT…") && ready)
                 { if (combat.Over) restart(); else enter(); }
-                GUI.Label(new Rect(65, 654, 500, 105), "WASD  move     ·     Mouse  look / stance\nLMB  strike     ·     Hold LMB  heavy     ·     RMB  guard\n1–4  stance     ·     Space  retreat     ·     Esc  pause\nR  restart     ·     F2  field notes     ·     F1  camera diagnostics", tiny);
-                GUI.Label(new Rect(65, height - 65, 500, 30), opponent.Name.ToUpperInvariant(), Style(10, Gold));
+                GUI.Label(new Rect(65, 335, 520, 205), "WASD  move     ·     Mouse  look / stance\nLMB  strike     ·     Hold LMB  heavy\nRMB  guard / parry     ·     1–4  stance\nLean / Q/E  dodge     ·     F  kiai\nSpace  retreat / advance     ·     Esc  pause\nR  restart     ·     F1  camera     ·     F2  field notes", Style(17, Paper));
                 if (!string.IsNullOrEmpty(inputError)) GUI.Label(new Rect(65, 780, 500, 60), inputError, body);
             }
             else

@@ -24,7 +24,7 @@ namespace Ganryujima.Editor
                 void Step(float dt)
                 { combat.Tick(dt,2,0); ai.Tick(dt,Vector2.zero,0); }
                 Reset(); var s=Calm(); s.leanTrigger=-1; Send(s);
-                Check(combat.DodgeDirection==-1 && combat.InvulnerableRemaining>0,"Lean pulse starts left dodge with i-frames");
+                Check(combat.DodgeDirection==1 && combat.InvulnerableRemaining>0,"Negative provider pulse starts reversed right dodge with i-frames");
                 Equal(combat.Stamina,100-GameConfig.DodgeCost,"Dodge spends stamina");
                 combat.ReceiveStrike(Stance.Upper,2,0);
                 Equal(combat.Health,100,"I-frames prevent an in-range unguarded hit");
@@ -39,6 +39,10 @@ namespace Ganryujima.Editor
                 Reset(); for(int i=0;i<6;i++) { combat.BeginCharge(); combat.ReleaseStrike(); combat.Tick(.47f,10,0); }
                 Check(!combat.TryDodge(1) && !combat.TryKiai(),"Low stamina prevents face abilities");
 
+                Reset(); s=Calm(); s.leanTrigger=1; s.leanX=1; Send(s);
+                Check(combat.DodgeDirection==-1 && face.Lean<0,"Positive provider lean reverses both dodge and camera lean");
+                Reset(); s=Calm(); s.leanX=-1; Send(s);
+                Check(face.Lean>0,"Negative continuous lean reverses camera direction");
                 Reset(); s=Calm(); s.kiai=true; Send(s);
                 Check(ai.State==OpponentState.Staggered,"Kiai staggers opponent in range");
                 Equal(combat.KiaiCooldown,GameConfig.KiaiCooldown,"Kiai cooldown begins at eight seconds");
