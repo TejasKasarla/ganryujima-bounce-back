@@ -72,17 +72,17 @@ namespace Ganryujima.Core
         public const float SparkSpeed = 3.6f;
         public const float FeedbackDuration = 1.5f;
         // Arima: tutorial opponent. All times use the same paused / hit-stop clock.
-        public const float ArimaIdle = 0.48f;
-        public const float ArimaCircle = 0.6f;
-        public const float ArimaWindup = 0.85f;
-        public const float ArimaStrike = 0.20f;
-        public const float ArimaImpactAt = 0.08f;
-        public const float ArimaRecover = 0.68f;
-        public const float ArimaFeint = 0.25f;
+        public const float ArimaIdle = 0.30f;
+        public const float ArimaCircle = 0.35f;
+        public const float ArimaWindup = 0.60f;
+        public const float ArimaStrike = 0.16f;
+        public const float ArimaImpactAt = 0.06f;
+        public const float ArimaRecover = 0.40f;
+        public const float ArimaFeint = 0.18f;
         public const float ArimaRecoil = 0.22f;
         public const float ArimaCounter = 1.05f;
         public const float ArimaStagger = 0.7f;
-        public const float ArimaGuard = 0.50f;
+        public const float ArimaGuard = 0.30f;
         public const float ArimaReach = 2.7f;
         public const float ArimaDamage = 18f;
         public const float ArimaSpeed = 2.10f;
@@ -132,16 +132,16 @@ namespace Ganryujima.Core
         public const float MeditationBreakThreshold = 0.45f;
         public const float MeditationBreakFlash = 0.65f;
         public const float MeditationBellVolume = 0.45f;
-        public const float YoshiokaWindup = 0.70f;
+        public const float YoshiokaWindup = 0.48f;
         public const float YoshiokaSpeed = 2.40f;
-        public const float KojiroWindup = 0.68f;
+        public const float KojiroWindup = 0.44f;
         public const float KojiroSpeed = 2.55f;
         public const float KojiroReach = 3.35f;
         public const float KojiroSpacing = 2.85f;
         public const float KojiroHealth = 125f;
         public const float KojiroDamage = 22f;
         public const float KojiroCounter = 0.85f;
-        public const float SwallowTurnTime = 0.58f;
+        public const float SwallowTurnTime = 0.40f;
         public const float EndingHonorThreshold = 7f;
     }
 }

@@ -48,9 +48,9 @@ namespace Ganryujima.Editor
                 Reset(); Until(OpponentState.Guard);
                 c.Stance=(Stance)(((int)ai.Zone+1)%4); c.BeginCharge(); c.ReleaseStrike(); Step(.13f);
                 Check(c.TargetHealth==100-GameConfig.LightDamage && ai.State==OpponentState.Staggered,"Changing zone defeats enemy guard");
-                Reset(); Until(OpponentState.Windup);
-                c.BeginCharge(); Step(GameConfig.HeavyChargeTime); c.ReleaseStrike(); Step(GameConfig.HeavyWindup+.01f);
-                Check(ai.State==OpponentState.Staggered,"Heavy strike interrupts windup");
+                Reset(); c.BeginCharge(); Step(GameConfig.HeavyChargeTime); Until(OpponentState.Windup);
+                c.ReleaseStrike(); Step(GameConfig.HeavyWindup+.01f);
+                Check(ai.State==OpponentState.Staggered,"Precharged heavy strike interrupts the faster windup");
                 Reset(); Until(OpponentState.Strike); player=new Vector2(0,-8); Step(.11f);
                 Check(c.Health==100,"Out of reach at contact avoids damage");
                 player=Vector2.zero; Reset(); Until(OpponentState.Strike);

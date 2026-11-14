@@ -117,7 +117,7 @@ namespace Ganryujima.World
             float phase = Mathf.Repeat(clock / 1.666667f, 1), motionWeight = .12f;
             if (ai.Telling) { motionName = "Sword_Attack_Standing"; phase = ai.TellProgress * .28f; motionWeight = .42f; }
             else if (ai.State == OpponentState.Strike) { motionName = ai.Id == OpponentId.Kojiro ? "Sword_Attack" : "Sword_Attack_Standing"; phase = Mathf.Lerp(.28f, .76f, Mathf.Clamp01(ai.StateAge / GameConfig.ArimaStrike)); motionWeight = .65f; }
-            else if (ai.State == OpponentState.Recover) { motionName = "Sword_Attack_Standing"; phase = Mathf.Lerp(.76f, 1, Mathf.Clamp01(ai.StateAge / .65f)); motionWeight = .42f * (1 - Mathf.Clamp01(ai.StateAge / .65f)); }
+            else if (ai.State == OpponentState.Recover) { motionName = "Sword_Attack_Standing"; phase = Mathf.Lerp(.76f, 1, Mathf.Clamp01(ai.StateAge / GameConfig.ArimaRecover)); motionWeight = .42f * (1 - Mathf.Clamp01(ai.StateAge / GameConfig.ArimaRecover)); }
             else if (ai.State == OpponentState.Recoil || ai.State == OpponentState.Staggered) { motionName = "Hit_Chest"; phase = Mathf.Clamp01(ai.StateAge / .55f); motionWeight = .55f; }
             var motion = SwordMotion.Sample(motionName, phase);
             grip += Vector3.ClampMagnitude(motion.hand, .65f) * motionWeight;
