@@ -40,6 +40,7 @@ namespace Ganryujima.Editor
 
         public static void Smoke()
         {
+            CombatChecks.Verify();
             CreateScene();
             SessionState.SetBool("GanryujimaSmoke", true);
             EditorApplication.EnterPlaymode();
@@ -58,9 +59,9 @@ namespace Ganryujima.Editor
                     var game = Object.FindFirstObjectByType<GameLoop>();
                     if (game != null && game.FramesTicked >= 10)
                     {
-                        if (Camera.main == null || Object.FindFirstObjectByType<CharacterController>() == null)
+                        if (Camera.main == null || Object.FindFirstObjectByType<CharacterController>() == null || game.Combat == null)
                             Finish(1, "Missing first-person components.");
-                        else Finish(0, "GANRYUJIMA SMOKE PASS: Play Mode boots, camera/controller exist, face loop ticks 10 frames.");
+                        else Finish(0, "GANRYUJIMA SMOKE PASS: Play Mode boots, combat/camera/controller exist, face loop ticks 10 frames.");
                     }
                 }
                 if (EditorApplication.timeSinceStartup > deadline) Finish(1, "Smoke timeout: game did not tick.");

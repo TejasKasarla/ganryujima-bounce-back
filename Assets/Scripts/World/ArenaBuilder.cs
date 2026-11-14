@@ -24,7 +24,7 @@ namespace Ganryujima.World
             Shape("Crown", PrimitiveType.Cube, gate, new Vector3(0, 5.8f, 0), new Vector3(7.2f, 0.35f, 0.65f), red);
             Shape("Crossbeam", PrimitiveType.Cube, gate, new Vector3(0, 4.8f, 0), new Vector3(6.2f, 0.25f, 0.4f), red);
             Shape("Center", PrimitiveType.Cube, gate, new Vector3(0, 5.2f, 0), new Vector3(0.2f, 0.8f, 0.2f), red);
-            var marker = new GameObject("Practice marker (static)").transform;
+            var marker = new GameObject("Practice Target").transform;
             marker.SetParent(root, false);
             marker.position = new Vector3(0, 0, 2);
             Shape("Post", PrimitiveType.Cylinder, marker, new Vector3(0, 0.9f, 0), new Vector3(0.28f, 0.9f, 0.28f), ink, true);
@@ -59,9 +59,9 @@ namespace Ganryujima.World
             return root;
         }
 
-        public static void BuildKatana(Transform camera)
+        public static Transform BuildKatana(Transform camera)
         {
-            var sword = new GameObject("Katana (static)").transform;
+            var sword = new GameObject("Katana").transform;
             sword.SetParent(camera, false);
             sword.localPosition = new Vector3(0.34f, -0.43f, 0.62f);
             sword.localRotation = Quaternion.Euler(12, 0, 24);
@@ -72,6 +72,7 @@ namespace Ganryujima.World
             Shape("Blade", PrimitiveType.Cube, sword, new Vector3(0, 0.6f, 0), new Vector3(0.033f, 0.88f, 0.013f), steel);
             Shape("Grip", PrimitiveType.Cylinder, sword, Vector3.zero, new Vector3(0.05f, 0.13f, 0.05f), dark);
             Shape("Guard", PrimitiveType.Cylinder, sword, new Vector3(0, 0.145f, 0), new Vector3(0.13f, 0.009f, 0.13f), dark);
+            return sword;
         }
 
         // Resources templates keep shaders/variants referenced in standalone builds.

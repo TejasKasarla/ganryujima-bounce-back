@@ -2,6 +2,8 @@ using System;
 using UnityEngine;
 using Ganryujima.Input.Face;
 using Ganryujima.World;
+using Ganryujima.Combat;
+using Ganryujima.UI;
 using KeyInput = UnityEngine.Input;
 
 namespace Ganryujima.Core
@@ -13,19 +15,27 @@ namespace Ganryujima.Core
         private FaceState state;
         private CharacterController player;
         private Camera view;
-        private bool ready;
-        private bool entered;
-        private float yaw;
-        private float pitch;
-        private float verticalVelocity;
+        private Transform target;
+        private CombatModel combat;
+        private PracticeExchange practice;
+        private CombatPresentation presentation;
+        private bool ready, entered;
+        private float yaw, pitch, verticalVelocity;
+        private Vector2 stanceMotion;
         private string inputError;
         public int FramesTicked { get; private set; }
+        public CombatModel Combat => combat;
+        private bool Captured => entered && Cursor.lockState == CursorLockMode.Locked && Application.isFocused;
+        private float Distance => target == null || player == null ? 0 : Vector2.Distance(
+            new Vector2(player.transform.position.x, player.transform.position.z), new Vector2(target.position.x, target.position.z));
+        private float AimAngle => Vector3.Angle(view.transform.forward, target.position + Vector3.up * 1.3f - view.transform.position);
 
         private async void Awake()
         {
             QualitySettings.vSyncCount = 1;
             Application.targetFrameRate = 60;
-            ArenaBuilder.Build();
+            Transform arena = ArenaBuilder.Build();
+            target = arena.Find("Practice Target");
             var body = new GameObject("Player");
             body.transform.position = new Vector3(0, 0, GameConfig.SpawnDistance);
             player = body.AddComponent<CharacterController>();
@@ -42,7 +52,10 @@ namespace Ganryujima.Core
             view.clearFlags = CameraClearFlags.SolidColor;
             view.backgroundColor = new Color(0.82f, 0.81f, 0.75f);
             view.gameObject.AddComponent<AudioListener>();
-            ArenaBuilder.BuildKatana(view.transform);
+            Transform sword = ArenaBuilder.BuildKatana(view.transform);
+            combat = new CombatModel();
+            practice = new PracticeExchange(combat);
+            presentation = new CombatPresentation(combat, view, sword, target);
             face = FaceInputFactory.createFaceInput();
             try { await face.start(); }
             catch (Exception error) { inputError = "Face provider failed: " + error.Message; Debug.LogException(error); }
@@ -54,22 +67,64 @@ namespace Ganryujima.Core
         private void Update()
         {
             if (!ready) return;
-            face.tick(); // First gameplay action, once per frame, including entry gate.
+            face.tick(); // First gameplay action, once per frame, including paused/released frames.
             state = face.getState();
             FramesTicked++;
             if (KeyInput.GetKeyDown(KeyCode.Escape)) SetCapture(false);
-            if (!entered || Cursor.lockState != CursorLockMode.Locked || !Application.isFocused) return;
-            yaw += KeyInput.GetAxisRaw("Mouse X") * GameConfig.MouseSensitivity;
-            pitch = Mathf.Clamp(pitch - KeyInput.GetAxisRaw("Mouse Y") * GameConfig.MouseSensitivity, -GameConfig.MaximumPitch, GameConfig.MaximumPitch);
+            if (KeyInput.GetKeyDown(KeyCode.R)) Restart();
+            if (!Captured) return; // Freeze combat and practice timers together; no global timeScale.
+            float realDt = Mathf.Min(Time.unscaledDeltaTime, GameConfig.MaximumDelta);
+            float dt = presentation.Stopped ? 0 : realDt;
+            if (dt > 0 && !combat.Over)
+            {
+                ReadLookAndCombat(dt);
+                MovePlayer(dt);
+                combat.Tick(dt, Distance, AimAngle);
+                practice.Tick(dt, Distance, AimAngle);
+            }
+            presentation.Tick(realDt, dt, practice);
+            view.transform.localPosition = Vector3.up * GameConfig.EyeHeight + presentation.CameraOffset;
+            if (combat.Over) SetCapture(false);
+        }
+
+        private void ReadLookAndCombat(float dt)
+        {
+            var mouse = new Vector2(KeyInput.GetAxisRaw("Mouse X"), KeyInput.GetAxisRaw("Mouse Y"));
+            yaw += mouse.x * GameConfig.MouseSensitivity;
+            pitch = Mathf.Clamp(pitch - mouse.y * GameConfig.MouseSensitivity, -GameConfig.MaximumPitch, GameConfig.MaximumPitch);
             player.transform.rotation = Quaternion.Euler(0, yaw, 0);
             view.transform.localRotation = Quaternion.Euler(pitch, 0, 0);
+            stanceMotion = Vector2.Lerp(stanceMotion, Vector2.zero, 1 - Mathf.Exp(-GameConfig.StanceMouseDecay * dt));
+            stanceMotion += mouse;
+            if (stanceMotion.magnitude >= GameConfig.StanceMouseThreshold)
+            {
+                combat.Stance = Mathf.Abs(stanceMotion.y) > Mathf.Abs(stanceMotion.x)
+                    ? (stanceMotion.y > 0 ? Stance.Upper : Stance.Lower)
+                    : (stanceMotion.x > 0 ? Stance.Side : Stance.Middle);
+                stanceMotion = Vector2.zero;
+            }
+            if (KeyInput.GetKeyDown(KeyCode.Alpha1)) combat.Stance = Stance.Upper;
+            if (KeyInput.GetKeyDown(KeyCode.Alpha2)) combat.Stance = Stance.Middle;
+            if (KeyInput.GetKeyDown(KeyCode.Alpha3)) combat.Stance = Stance.Lower;
+            if (KeyInput.GetKeyDown(KeyCode.Alpha4)) combat.Stance = Stance.Side;
+            // Releases are reconciled from held state too, so a release during hit-stop cannot stick.
+            if (combat.Guarding && !KeyInput.GetMouseButton(1)) combat.EndGuard();
+            if (combat.Charging && !KeyInput.GetMouseButton(0)) combat.ReleaseStrike();
+            if (KeyInput.GetMouseButtonDown(1)) combat.BeginGuard();
+            if (KeyInput.GetMouseButtonDown(0)) combat.BeginCharge();
+            if (KeyInput.GetKeyDown(KeyCode.Space)) combat.TryRetreat();
+        }
+
+        private void MovePlayer(float dt)
+        {
             float x = (KeyInput.GetKey(KeyCode.D) ? 1 : 0) - (KeyInput.GetKey(KeyCode.A) ? 1 : 0);
             float z = (KeyInput.GetKey(KeyCode.W) ? 1 : 0) - (KeyInput.GetKey(KeyCode.S) ? 1 : 0);
             var direction = Vector3.ClampMagnitude(new Vector3(x, 0, z), 1);
-            float dt = Mathf.Min(Time.deltaTime, GameConfig.MaximumDelta);
-            var horizontal = player.transform.TransformDirection(direction) * (GameConfig.WalkSpeed * dt);
-            var target = player.transform.position + horizontal;
-            var limited = Vector2.ClampMagnitude(new Vector2(target.x, target.z), GameConfig.ArenaRadius - GameConfig.PlayerRadius);
+            Vector3 velocity = combat.RetreatRemaining > 0 ? -player.transform.forward * GameConfig.RetreatSpeed
+                : player.transform.TransformDirection(direction) * (GameConfig.WalkSpeed * combat.MovementScale);
+            var horizontal = velocity * dt;
+            var next = player.transform.position + horizontal;
+            var limited = Vector2.ClampMagnitude(new Vector2(next.x, next.z), GameConfig.ArenaRadius - GameConfig.PlayerRadius);
             horizontal.x = limited.x - player.transform.position.x;
             horizontal.z = limited.y - player.transform.position.z;
             if (player.isGrounded && verticalVelocity < 0) verticalVelocity = GameConfig.GroundedVelocity;
@@ -77,43 +132,31 @@ namespace Ganryujima.Core
             player.Move(horizontal + Vector3.up * (verticalVelocity * dt));
         }
 
+        private void Enter() { if (ready && !combat.Over) SetCapture(true); }
+        private void Restart()
+        {
+            if (!ready) return;
+            combat.Reset(); practice.Reset(); presentation.Reset();
+            player.enabled = false;
+            player.transform.SetPositionAndRotation(new Vector3(0, 0, GameConfig.SpawnDistance), Quaternion.identity);
+            player.enabled = true;
+            yaw = pitch = verticalVelocity = 0;
+            stanceMotion = Vector2.zero;
+            view.transform.localPosition = Vector3.up * GameConfig.EyeHeight;
+            view.transform.localRotation = Quaternion.identity;
+            SetCapture(true);
+        }
+
         private void SetCapture(bool capture)
         {
             entered = capture;
+            if (!capture) { combat?.CancelHeldInput(); stanceMotion = Vector2.zero; }
             Cursor.lockState = capture ? CursorLockMode.Locked : CursorLockMode.None;
             Cursor.visible = !capture;
         }
         private void OnApplicationFocus(bool focus) { if (!focus) SetCapture(false); }
         private void OnDisable() { SetCapture(false); }
-        private void OnDestroy() { face?.stop(); }
-
-        private void OnGUI()
-        {
-            float scale = Mathf.Max(0.6f, Screen.height / 900f);
-            GUI.matrix = Matrix4x4.Scale(Vector3.one * scale);
-            float width = Screen.width / scale, height = Screen.height / scale;
-            var heading = new GUIStyle(GUI.skin.label) { fontSize = 22, fontStyle = FontStyle.Bold };
-            var small = new GUIStyle(GUI.skin.label) { fontSize = 14, wordWrap = true };
-            GUI.Label(new Rect(30, 22, 600, 40), "GANRYUJIMA  /  BOUNCE BACK", heading);
-            GUI.Label(new Rect(30, 56, 600, 30), "01 — THE PRACTICE GROUND · UNITY", small);
-            GUI.Box(new Rect(25, height - 152, 650, 105), GUIContent.none);
-            GUI.Label(new Rect(40, height - 145, 625, 100),
-                $"KEYBOARD FACE MOCK · {(state.tracking ? "TRACKING" : "OFFLINE")} · {(state.calibrated ? "CALIBRATED" : "UNCALIBRATED")}\n" +
-                $"Composure {state.composure:F2} · Lean {state.leanX:F1} · Gaze {state.gaze} · Wink {state.wink}\n" +
-                $"Pulse: lean {state.leanTrigger} / kiai {state.kiai} / nod {state.nod} / shake {state.shake}", small);
-            GUI.Label(new Rect(30, height - 38, width - 60, 30), "WASD footwork · Mouse look · Esc release     |     Combat arrives in milestone 2", small);
-            if (entered && Cursor.lockState == CursorLockMode.Locked)
-            {
-                GUI.Label(new Rect(width / 2 - 4, height / 2 - 10, 20, 25), "·", heading);
-                return;
-            }
-            float left = (width - 560) / 2;
-            GUI.Box(new Rect(left - 25, 140, 610, 425), GUIContent.none);
-            GUI.Label(new Rect(left, 165, 550, 50), "Before the first strike.", new GUIStyle(heading) { fontSize = 34 });
-            GUI.Label(new Rect(left, 225, 540, 80), "A quiet place to find your footing.\nExplore the practice ground. No webcam required.", small);
-            if (GUI.Button(new Rect(left, 310, 540, 48), ready ? "Enter the practice ground" : "Starting input…") && ready) SetCapture(true);
-            GUI.Label(new Rect(left, 380, 540, 115), "Mock face controls (readout only):\nQ / E lean · F kiai · Y / N nod / shake\nHold C low composure · Z / X / V gaze · G wink\n\nMouse and keyboard required. Click Game view first.", small);
-            if (!string.IsNullOrEmpty(inputError)) GUI.Label(new Rect(left, 510, 540, 50), inputError, small);
-        }
+        private void OnDestroy() { face?.stop(); presentation?.Dispose(); }
+        private void OnGUI() { CombatHud.Draw(combat, practice, state, ready, Captured, Distance, Enter, Restart, inputError); }
     }
 }
