@@ -3,7 +3,11 @@ namespace Ganryujima.Core
     public static class GameConfig
     {
         // Keyboard-first demo by default; the optional camera launcher keeps provider selection at the factory boundary.
+#if UNITY_WEBGL && !UNITY_EDITOR
+        public const bool DEBUG_INPUT = true;
+#else
         public static readonly bool DEBUG_INPUT = !System.Array.Exists(System.Environment.GetCommandLineArgs(), arg => arg == "--camera");
+#endif
         public const float EyeHeight = 1.68f;
         public const int LeanDirection = -1; // Reverse provider lean into the player's intended screen direction.
         public const float FieldOfView = 68f;

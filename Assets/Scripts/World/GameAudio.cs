@@ -83,6 +83,10 @@ namespace Ganryujima.World
         private AudioClip MakeLoop(AudioClip original)
         {
             if (original == null) return null;
+#if UNITY_WEBGL && !UNITY_EDITOR
+            // Browser decoding is asynchronous; don't copy an unloaded clip into a silent loop.
+            return original;
+#else
             original.LoadAudioData();
             var data = new float[original.samples * original.channels];
             if (!original.GetData(data, 0)) return original;
@@ -114,6 +118,7 @@ namespace Ganryujima.World
             var result = owner.Own(AudioClip.Create(original.name + " (crossfaded loop)", length, channels, original.frequency, false));
             result.SetData(loop, 0);
             return result;
+#endif
         }
         public void SetScene(string arena, string kind)
         {

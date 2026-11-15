@@ -208,3 +208,11 @@ Boss pace update: all three fighters move about 26% faster (Arima 2.10 m/s, Yosh
 Fight soundtrack: live Taiko performed by Singapore Wind Symphony's Percussion Ensemble (composition credited to Scott Harding), listed as CC0 public domain at https://commons.wikimedia.org/wiki/File:02_Taiko2_(short).oga . Source credits/license and original verified SHA1 are retained in Assets/Resources/Audio/Battle/LICENSE.md. Converted Ogg loops with overlapped ends, fades with combat, follows Music volume and pauses with the game. 224 rule assertions and polish integration checks pass with the clip loaded.
 
 Music playback fix: the fight loop now starts on entering a duel and follows encounter state instead of the cursor-capture/footwork flag. The audio asset preloads, has higher voice priority, and automatically restarts if stopped during combat. Its music mix gain is increased from 0.62 to 0.9. Playback checks verify decoded non-silent PCM, nonzero duel volume without capture, advancing audio samples and recovery after stopping the source, alongside all 224 gameplay assertions and polish integration checks. Restart Play Mode after updating scripts.
+
+## Browser version
+
+Ganryujima → Build browser game creates a Unity WebGL build in Builds/WebGL (or GANRYUJIMA_WEB_DIR). Upload a ZIP with index.html at its root to itch.io as HTML, mark it playable in-browser, and use a 1280×720 embed with fullscreen available. Gzip decompression fallback supports hosts without custom encoding headers. The canvas scales to its iframe, and the loader shows progress.
+
+This browser version uses IFaceInput's keyboard mock: Q/E dodge, F kiai, C agitation and keyboard story choices. Dev A's desktop HTTP webcam bridge is not a browser provider; real webcam controls remain available in the Windows download. A native browser provider is a separate Dev A integration. Desktop controls and face setup are preserved.
+
+Web-specific compatibility: use a bundled Unity font instead of OS fonts, skip synchronous PCM loop baking while browser audio decodes, omit desktop quit, and preserve runtime primitive collision/render components for IL2CPP stripping.

@@ -21,7 +21,7 @@ namespace Ganryujima.UI
             float scale = Mathf.Max(0.6f, Screen.height / 900f);
             GUI.matrix = Matrix4x4.Scale(Vector3.one * scale);
             float width = Screen.width / scale, height = Screen.height / scale;
-            if (serif == null) serif = Font.CreateDynamicFontFromOSFont(new[] { "Georgia", "Times New Roman" }, 24);
+            if (serif == null) serif = GameFonts.Serif();
             GUIStyle tiny = Style(11, Paper), body = Style(14, Paper), title = Style(32, Paper, true);
             GUIStyle centered = Style(15, Paper); centered.alignment = TextAnchor.MiddleCenter;
             if (combat == null) return;

@@ -20,14 +20,14 @@ namespace Ganryujima.UI
             Fill(new Rect(x, y, 960, 710), new Color(.045f, .075f, .075f, .98f));
             Fill(new Rect(x + 40, y + 38, 34, 3), new Color(.62f, .19f, .13f));
             Label(new Rect(x + 40, y + 55, 830, 24), "G A N R Y U J I M A   /   " + chapter.ToUpperInvariant(), 12, gold);
-            if (serif == null) serif = Font.CreateDynamicFontFromOSFont(new[] { "Georgia", "Times New Roman" }, 24);
+            if (serif == null) serif = GameFonts.Serif();
             Label(new Rect(x + 37, y + 94, 850, 70), page == 0 ? "A breath between exchanges." : page == 1 ? "Find your balance." : "The way of the blade.", 37, paper, true);
             if (Button(new Rect(x + 40, y + 183, 255, 46), "RESUME   /   ESC")) resume();
             if (Button(new Rect(x + 40, y + 245, 255, 46), "SOUND & DISPLAY")) page = 1;
             if (Button(new Rect(x + 40, y + 307, 255, 46), "CONTROLS")) page = 2;
             if (canRestart && Button(new Rect(x + 40, y + 411, 255, 46), "RESTART THIS DUEL")) restart();
             if (Button(new Rect(x + 40, y + 473, 255, 46), "NEW JOURNEY")) newJourney();
-            if (!Application.isEditor && Button(new Rect(x + 40, y + 535, 255, 46), "QUIT TO DESKTOP")) Application.Quit();
+            if (!Application.isEditor && Application.platform != RuntimePlatform.WebGLPlayer && Button(new Rect(x + 40, y + 535, 255, 46), "QUIT TO DESKTOP")) Application.Quit();
             float right = x + 345;
             if (page == 1)
             {
