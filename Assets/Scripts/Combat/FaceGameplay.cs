@@ -5,7 +5,7 @@ using Ganryujima.Input.Face;
 
 namespace Ganryujima.Combat
 {
-    /// <summary>Dev B's consumer of IFaceInput snapshots. Never accesses camera/provider internals.</summary>
+    /// <summary>Maps face snapshots to combat actions and camera lean.</summary>
     public sealed class FaceGameplay : IDisposable
     {
         private readonly CombatModel combat;
@@ -23,7 +23,8 @@ namespace Ganryujima.Combat
 
         public FaceGameplay(CombatModel combat, ArimaOpponent opponent)
         {
-            this.combat = combat; this.opponent = opponent;
+            this.combat = combat;
+            this.opponent = opponent;
             combat.Impacted += OnImpact;
         }
 
@@ -35,13 +36,23 @@ namespace Ganryujima.Combat
             combat.SetComposure(HasSignal ? snapshot.composure : GameConfig.NeutralComposure);
             if (!active || !HasSignal)
             {
-                pendingDodge = 0; pendingKiai = false; focusTime = 0; Lean = 0;
+                pendingDodge = 0;
+                pendingKiai = false;
+                focusTime = 0;
+                Lean = 0;
                 if (!HasSignal) clashRemaining = 0;
                 return;
             }
             if (snapshot.leanTrigger == -1 || snapshot.leanTrigger == 1)
-            { pendingDodge = snapshot.leanTrigger * GameConfig.LeanDirection; dodgeBuffer = GameConfig.GestureBuffer; }
-            if (snapshot.kiai) { pendingKiai = true; kiaiBuffer = GameConfig.GestureBuffer; }
+            {
+                pendingDodge = snapshot.leanTrigger * GameConfig.LeanDirection;
+                dodgeBuffer = GameConfig.GestureBuffer;
+            }
+            if (snapshot.kiai)
+            {
+                pendingKiai = true;
+                kiaiBuffer = GameConfig.GestureBuffer;
+            }
         }
 
         // This clock runs through local hit-stop, but never while the game is paused.
@@ -49,20 +60,27 @@ namespace Ganryujima.Combat
         {
             if (!active || realDt <= 0) return;
             clashRemaining = Mathf.Max(0, clashRemaining - realDt);
-            dodgeBuffer -= realDt; kiaiBuffer -= realDt;
+            dodgeBuffer -= realDt;
+            kiaiBuffer -= realDt;
             if (dodgeBuffer <= 0) pendingDodge = 0;
             if (kiaiBuffer <= 0) pendingKiai = false;
-            bool focusing = HasSignal && state.gaze == Gaze.center && distance <= GameConfig.GazeFocusRange && aimAngle <= GameConfig.GazeFocusAngle;
+            bool focusing = HasSignal && state.gaze == Gaze.center
+                && distance <= GameConfig.GazeFocusRange && aimAngle <= GameConfig.GazeFocusAngle;
             focusTime = focusing ? Mathf.Min(GameConfig.GazeFocusDuration, focusTime + realDt) : 0;
-            float target = HasSignal && !float.IsNaN(state.leanX) && !float.IsInfinity(state.leanX) ? Mathf.Clamp(state.leanX,-1,1) : 0;
+            float target = HasSignal && !float.IsNaN(state.leanX) && !float.IsInfinity(state.leanX)
+                ? Mathf.Clamp(state.leanX, -1, 1) : 0;
             Lean = Mathf.Lerp(Lean, target * GameConfig.LeanDirection, 1 - Mathf.Exp(-GameConfig.LeanSmoothing * realDt));
         }
 
         public void ApplyGestures(bool canAct, float distance, float aimAngle)
         {
             if (!active || !HasSignal || !canAct) return;
-            // Consume each pulse once. Only hit-stop buffers input; cooldowns do not queue repeated actions.
-            if (pendingDodge != 0) { combat.TryDodge(pendingDodge); pendingDodge = 0; }
+            // Clear pulses even when an action fails, so cooldown input cannot fire later.
+            if (pendingDodge != 0)
+            {
+                combat.TryDodge(pendingDodge);
+                pendingDodge = 0;
+            }
             if (pendingKiai)
             {
                 if (combat.TryKiai()) opponent.ReceiveKiai(distance, aimAngle);
@@ -75,15 +93,22 @@ namespace Ganryujima.Combat
             if (!active || !HasSignal || combat.Composure < GameConfig.CalmThreshold) return;
             if (impact != Impact.Parry && impact != Impact.Block && impact != Impact.TargetBlock) return;
             clashRemaining = GameConfig.CalmClashDuration;
-            clashScale = Mathf.Lerp(1,GameConfig.CalmClashScale,
-                Mathf.InverseLerp(GameConfig.CalmThreshold,1,combat.Composure));
+            clashScale = Mathf.Lerp(1, GameConfig.CalmClashScale,
+                Mathf.InverseLerp(GameConfig.CalmThreshold, 1, combat.Composure));
         }
         public void Reset()
         {
-            state = default; active = HasSignal = pendingKiai = false;
-            pendingDodge = 0; Lean = focusTime = dodgeBuffer = kiaiBuffer = clashRemaining = 0;
-            clashScale = 1; combat.SetComposure(GameConfig.NeutralComposure);
+            state = default;
+            active = HasSignal = pendingKiai = false;
+            pendingDodge = 0;
+            Lean = focusTime = dodgeBuffer = kiaiBuffer = clashRemaining = 0;
+            clashScale = 1;
+            combat.SetComposure(GameConfig.NeutralComposure);
         }
-        public void Dispose() { combat.Impacted -= OnImpact; }
+
+        public void Dispose()
+        {
+            combat.Impacted -= OnImpact;
+        }
     }
 }
